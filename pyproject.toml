@@ -1,20 +1,18 @@
 [tool.poetry]
-name = "my-app"
+name = "zapier-triggers"
 version = "0.1.0"
-description = "Project template for Django app, using Poetry."
+description = "Simple Django app for managing Zapier triggers."
 license = "MIT"
 authors = ["YunoJuno <code@yunojuno.com>"]
 maintainers = ["YunoJuno <code@yunojuno.com>"]
 readme = "README.md"
-homepage = "https://github.com/yunojuno/poetry-template"
-repository = "https://github.com/yunojuno/poetry-template"
-documentation = "https://github.com/yunojuno/poetry-template"
+homepage = "https://github.com/yunojuno/django-zapier-trigger"
+repository = "https://github.com/yunojuno/django-zapier-trigger"
+documentation = "https://github.com/yunojuno/pdjango-zapier-trigger"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 2.2",
-    "Framework :: Django :: 3.0",
     "Framework :: Django :: 3.1",
     "Framework :: Django :: 3.2",
     "License :: OSI Approved :: MIT License",
@@ -24,11 +22,12 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
 ]
-packages = [{ include = "my_app" }]
+packages = [{ include = "zapier" }]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-django = "^2.2 || ^3.0"
+django = "^3.1 || ^4.0"
+djangorestframework = "^3.12.4"
 
 [tool.poetry.dev-dependencies]
 black = {version = "*", allow-prereleases = true}
@@ -47,6 +46,8 @@ pytest = "*"
 pytest-cov = "*"
 pytest-django = "*"
 tox = "*"
+psycopg2-binary = "^2.9.1"
+dj-database-url = "^0.5.0"
 
 [build-system]
 requires = ["poetry>=0.12"]

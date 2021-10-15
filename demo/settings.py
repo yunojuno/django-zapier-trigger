@@ -1,16 +1,17 @@
-from distutils.version import StrictVersion
 from os import path
 
-import django
-
-DJANGO_VERSION = StrictVersion(django.get_version())
+import dj_database_url
 
 DEBUG = True
 TEMPLATE_DEBUG = True
 USE_TZ = True
 USE_L10N = True
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "demo.db"}}
+DATABASES = {
+    "default": dj_database_url.config(
+        default="postgres://postgres:postgres@localhost:5423/postgres"
+    )
+}
 
 INSTALLED_APPS = (
     "django.contrib.admin",
@@ -19,7 +20,7 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "my_app",
+    "zapier",
 )
 
 MIDDLEWARE = [
