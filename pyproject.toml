@@ -49,6 +49,7 @@ pytest = "*"
 pytest-cov = "*"
 pytest-django = "*"
 tox = "*"
+types-python-dateutil = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
