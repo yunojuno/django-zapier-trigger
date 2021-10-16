@@ -77,20 +77,26 @@ is a good option to run the application locally.
 
 ## Usage
 
-The app does not automatically add tokens for your users - this is your
-responsibility:
+Now that you have authentication set up, you can create your triggers. A
+polling trigger is nothing more that a GET endpoint that supports the
+token authentication and that returns an ordered list of JSON objects.
+Zapier itself handles deduplication of objects using the `id` property
+of each object that is returned - you can read more about deduplication
+here - https://zapier.com/help/create/basics/data-deduplication-in-zaps
+
+This package is responsible for the endpoint authentication - everything
+else is up to you. You can use the `zapier_trigger` view function
+decorator to guard the functions that you set up as triggers. The
+decorator takes a required string argument, which is a scope that must
+match the incoming `request.auth`. The decorator handles request
+authentication, setting the `request.user` and `request.auth`
+properties.
 
 ```python
-# example view function for creating a new token
-def add_zapier_token(request: HttpRequest) -> HttpResponse:
-    ZapierToken.objects.create(user=request.user, scopes=["default_scope"])
-    return HttpReponse("ok")
-
-# example view function for adding a new scope to a token
-def add_zapier_token_scope(request: HttpRequest, new_scope: str) -> HttpResponse:
-    token = request.user.zapier_token
-    token.add_scope(new_scope)
-    return HttpReponse("ok")
+# views.py
+@zapier.decorators.zapier_trigger("new_books")
+def new_books_trigger(request: HttpRequest) -> JsonResponse:
+    books = Book.objects.order_by("-id")[:25]
+    data = [{"id": book.id, "title": book.title} for book in books]
+    return JsonReponse(data)
 ```
-
-### Creating a polling trigger
