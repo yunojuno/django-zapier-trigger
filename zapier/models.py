@@ -11,6 +11,8 @@ from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
+from zapier.exceptions import TokenScopeError
+
 
 class ZapierToken(models.Model):
     """Per-user Zapier API token."""
@@ -48,11 +50,23 @@ class ZapierToken(models.Model):
 
     def has_scope(self, scope: str) -> bool:
         # negative scope means excluded.
+        if scope == "*":
+            raise ValueError("scope argument cannot be '*'")
         if f"-{scope}" in self.api_scopes:
             return False
         if "*" in self.api_scopes:
             return True
         return scope in self.api_scopes
+
+    def check_scope(self, scope: str) -> None:
+        """Raise TokenScopeError if token does not have the scope requested."""
+        if not scope:
+            raise ValueError("Scope argument is missing or empty.")
+        if scope == "*":
+            return
+        if self.has_scope(scope):
+            return
+        raise TokenScopeError("Token does not have required scope.")
 
     def add_scope(self, scope: str) -> None:
         """Add a new scope to the token.api_scopes."""
@@ -71,6 +85,11 @@ class ZapierToken(models.Model):
         """Remove scopes to the token.api_scopes."""
         self.api_scopes = [s for s in self.api_scopes if s and s not in scopes]
         self.save(update_fields={"api_scopes"})
+
+    def set_scopes(self, scopes: list[str]) -> None:
+        """Set api_scopes and save object."""
+        self.api_scopes = scopes
+        self.save(update_fields=["api_scopes"])
 
     def request_timestamp(self, scope: str) -> datetime | None:
         """

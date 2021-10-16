@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from datetime import datetime
 
@@ -8,6 +10,7 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
+from zapier.exceptions import TokenScopeError
 from zapier.models import ZapierToken
 
 
@@ -43,6 +46,33 @@ class TestZapierToken:
     ) -> None:
         zapier_token.api_scopes = scopes
         assert zapier_token.has_scope(scope) == has_scope
+
+    def test_has_scope__error(self, zapier_token: ZapierToken) -> None:
+        with pytest.raises(ValueError):
+            zapier_token.has_scope("*")
+
+    @pytest.mark.parametrize(
+        "scopes,scope,error",
+        [
+            (["foo"], "", ValueError),
+            (["foo"], "*", None),
+            (["foo"], "foo", None),
+            (["foo"], "bar", TokenScopeError),
+        ],
+    )
+    def test_check_scope__error(
+        self,
+        zapier_token: ZapierToken,
+        scopes: list[str],
+        scope: str,
+        error: type[Exception] | None,
+    ) -> None:
+        zapier_token.api_scopes = scopes
+        if error:
+            with pytest.raises(error):
+                zapier_token.check_scope(scope)
+        else:
+            zapier_token.check_scope(scope)
 
     @pytest.mark.parametrize(
         "scopes_before,add_scope,scopes_after",
@@ -91,6 +121,13 @@ class TestZapierToken:
             zapier_token.remove_scopes(remove_scope)
         assert set(zapier_token.api_scopes) == set(scopes_after)
 
+    @pytest.mark.parametrize("scopes", [["*"], ["*", "foo"]])
+    def test_set_scopes(self, zapier_token: ZapierToken, scopes: list[str]) -> None:
+        zapier_token.set_scopes(scopes)
+        assert zapier_token.api_scopes == scopes
+        zapier_token.refresh_from_db()
+        assert zapier_token.api_scopes == scopes
+
     @pytest.mark.parametrize(
         "recent_requests,scope,result",
         [
@@ -101,7 +138,7 @@ class TestZapierToken:
             ({}, "foo", None),
         ],
     )
-    def test_requet_timestamp(
+    def test_request_timestamp(
         self,
         zapier_token: ZapierToken,
         recent_requests: dict,

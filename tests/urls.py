@@ -1,10 +1,10 @@
 from django.contrib import admin
 from django.urls import path
 
-from zapier.views import TriggerAuthCheck
+from zapier.views import zapier_token_check
 
 admin.autodiscover()
 
 urlpatterns = [
-    path("zapier/auth-check/", TriggerAuthCheck.as_view(), name="zapier_auth_check")
+    path("zapier/auth-check/", zapier_token_check, name="zapier_token_check")
 ]
