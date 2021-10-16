@@ -18,6 +18,7 @@ class ZapierTokenAdmin(admin.ModelAdmin):
     actions = ("refresh_tokens", "reset_tokens", "revoke_tokens")
     list_display = ("user", "api_token", "api_scopes")
     search_fields = ("user__first_name", "user__last_name", "user__email", "api_scopes")
+    list_select_related = ("user",)
     readonly_fields = (
         "api_token",
         "recent_requests",
@@ -36,7 +37,7 @@ class ZapierTokenAdmin(admin.ModelAdmin):
         )
 
     refresh_tokens.short_description = _lazy(  # type: ignore
-        "Refresh selected zapier tokens (update the token uuid)"
+        "Refresh selected zapier tokens (reset token uuid, retain logs, scopes)"
     )
 
     def reset_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
@@ -49,7 +50,7 @@ class ZapierTokenAdmin(admin.ModelAdmin):
         )
 
     reset_tokens.short_description = _lazy(  # type: ignore
-        "Reset selected zapier tokens (reset recent request timestamps)"
+        "Reset selected zapier tokens (reset logs, retain token uuid, scopes)"
     )
 
     def revoke_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
@@ -62,5 +63,5 @@ class ZapierTokenAdmin(admin.ModelAdmin):
         )
 
     revoke_tokens.short_description = _lazy(  # type: ignore
-        "Revoke selected zapier tokens (remove scopes and disable)"
+        "Revoke selected zapier tokens (remove scopes, retain token uuid, logs)"
     )

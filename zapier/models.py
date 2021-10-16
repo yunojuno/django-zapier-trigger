@@ -54,12 +54,32 @@ class ZapierToken(models.Model):
             return True
         return scope in self.api_scopes
 
-    def latest_request(self, scope: str = "*") -> datetime | None:
+    def add_scope(self, scope: str) -> None:
+        """Add a new scope to the token.api_scopes."""
+        self.add_scopes([scope])
+
+    def add_scopes(self, scopes: list[str]) -> None:
+        """Add new scopes to the token.api_scopes."""
+        self.api_scopes = list(set(self.api_scopes + scopes))
+        self.save(update_fields=["api_scopes"])
+
+    def remove_scope(self, scope: str) -> None:
+        """Remove a scope to the token.api_scopes."""
+        self.remove_scopes([scope])
+
+    def remove_scopes(self, scopes: list[str]) -> None:
+        """Remove scopes to the token.api_scopes."""
+        self.api_scopes = [s for s in self.api_scopes if s and s not in scopes]
+        self.save(update_fields={"api_scopes"})
+
+    def request_timestamp(self, scope: str) -> datetime | None:
         """
         Return the last request made for a given scope.
 
-        The timestamp is stored as a JSON, so we need to parse
-        it out of the str.
+        The timestamp is stored as a JSON, so we need to parse it out of
+        the str. If no matching scope request was found we return None.
+        If the scope arg is "*" (all / any scope) then we return the
+        latest timestamp across all scopes.
 
         """
         if not scope:

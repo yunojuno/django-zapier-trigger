@@ -3,6 +3,7 @@ from datetime import datetime
 
 import pytest
 from dateutil.parser import parse as date_parse
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
@@ -44,6 +45,53 @@ class TestZapierToken:
         assert zapier_token.has_scope(scope) == has_scope
 
     @pytest.mark.parametrize(
+        "scopes_before,add_scope,scopes_after",
+        [
+            (["*"], "foo", ["*", "foo"]),
+            (["foo"], "bar", ["foo", "bar"]),
+            (["foo"], "foo", ["foo"]),
+            (["foo"], ["foo", "bar"], ["foo", "bar"]),
+        ],
+    )
+    def test_add_scopes(
+        self,
+        user: settings.AUTH_USER_MODEL,
+        scopes_before: list[str],
+        add_scope: str,
+        scopes_after: list[str],
+    ) -> None:
+        zapier_token = ZapierToken.objects.create(user=user, api_scopes=scopes_before)
+        if isinstance(add_scope, str):
+            zapier_token.add_scope(add_scope)
+        else:
+            zapier_token.add_scopes(add_scope)
+        assert set(zapier_token.api_scopes) == set(scopes_after)
+
+    @pytest.mark.parametrize(
+        "scopes_before,remove_scope,scopes_after",
+        [
+            (["*"], "foo", ["*"]),
+            (["foo"], "bar", ["foo"]),
+            (["foo"], "foo", []),
+            (["foo", "bar"], ["foo"], ["bar"]),
+            (["foo", "bar"], ["foo", "bar", "baz"], []),
+        ],
+    )
+    def test_remove_scopes(
+        self,
+        user: settings.AUTH_USER_MODEL,
+        scopes_before: list[str],
+        remove_scope: str,
+        scopes_after: list[str],
+    ) -> None:
+        zapier_token = ZapierToken.objects.create(user=user, api_scopes=scopes_before)
+        if isinstance(remove_scope, str):
+            zapier_token.remove_scope(remove_scope)
+        else:
+            zapier_token.remove_scopes(remove_scope)
+        assert set(zapier_token.api_scopes) == set(scopes_after)
+
+    @pytest.mark.parametrize(
         "recent_requests,scope,result",
         [
             ({"foo": "2021-10-14T19:32:20"}, "foo", date_parse("2021-10-14T19:32:20")),
@@ -53,7 +101,7 @@ class TestZapierToken:
             ({}, "foo", None),
         ],
     )
-    def test_latest_request(
+    def test_requet_timestamp(
         self,
         zapier_token: ZapierToken,
         recent_requests: dict,
@@ -61,7 +109,7 @@ class TestZapierToken:
         result: datetime,
     ) -> None:
         zapier_token.recent_requests = recent_requests
-        assert zapier_token.latest_request(scope) == result
+        assert zapier_token.request_timestamp(scope) == result
 
     def test_log_request(self, zapier_token: ZapierToken) -> None:
         assert zapier_token.recent_requests == {}
