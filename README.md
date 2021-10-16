@@ -53,17 +53,15 @@ urlpatterns = [
     ...
     path(
         "zapier/auth-check/",
-        zapier.views.TriggerAuthCheck.as_view(),
+        zapier.views.zapier_token_check,
         name="zapier_auth_check",
     ),
 ]
 ```
 
-4. Configure Zapier trigger
+4. Configure Zapier trigger (https://platform.zapier.com/docs/triggers)
 
-Zapier triggers: https://platform.zapier.com/docs/triggers
-
-This app supports the "API Key" auth model for Zapier apps:
+This app supports the "API Key" auth model for Zapier apps
 https://platform.zapier.com/docs/apikey
 
 You must configure your Zapier authentication to use API Key
