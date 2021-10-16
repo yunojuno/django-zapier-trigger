@@ -1,22 +1,16 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime
 
 import pytest
 from dateutil.parser import parse as date_parse
 from django.conf import settings
-from django.core.serializers.json import DjangoJSONEncoder
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
+from tests.conftest import jsonify
 from zapier.exceptions import TokenScopeError
 from zapier.models import ZapierToken
-
-
-def jsonify(data: dict) -> dict:
-    """Convert a python dict into a JSON-compatible dict."""
-    return json.loads(json.dumps(data, cls=DjangoJSONEncoder))
 
 
 @pytest.mark.django_db
@@ -129,34 +123,36 @@ class TestZapierToken:
         assert zapier_token.api_scopes == scopes
 
     @pytest.mark.parametrize(
-        "recent_requests,scope,result",
+        "request_log,scope,result",
         [
-            ({"foo": "2021-10-14T19:32:20"}, "foo", date_parse("2021-10-14T19:32:20")),
-            ({"foo": "2021-10-14T19:32:20"}, "*", date_parse("2021-10-14T19:32:20")),
-            ({"bar": "2021-10-14T19:32:20"}, "*", date_parse("2021-10-14T19:32:20")),
-            ({"bar": "2021-10-14T19:32:20"}, "foo", None),
+            (
+                {"foo": ("2021-10-14T19:32:20", None)},
+                "foo",
+                (date_parse("2021-10-14T19:32:20"), None),
+            ),
+            ({"bar": ("2021-10-14T19:32:20", None)}, "foo", None),
             ({}, "foo", None),
         ],
     )
-    def test_request_timestamp(
+    def test_get_last_request(
         self,
         zapier_token: ZapierToken,
-        recent_requests: dict,
+        request_log: dict,
         scope: str,
         result: datetime,
     ) -> None:
-        zapier_token.recent_requests = recent_requests
-        assert zapier_token.request_timestamp(scope) == result
+        zapier_token.request_log = request_log
+        assert zapier_token.get_last_request(scope) == result
 
     def test_log_request(self, zapier_token: ZapierToken) -> None:
-        assert zapier_token.recent_requests == {}
+        assert zapier_token.request_log == {}
         now = tz_now()
         with freeze_time(now):
             zapier_token.log_request("foo")
         # pre-serialized form is the actual date
-        assert zapier_token.recent_requests == {"foo": now}
+        assert zapier_token.request_log == {"foo": (now, None)}
         zapier_token.refresh_from_db()
-        assert zapier_token.recent_requests == jsonify({"foo": now})
+        assert zapier_token.request_log == jsonify({"foo": (now, None)})
 
     def test_refresh(self, zapier_token: ZapierToken) -> None:
         """Test refresh method updates the api_token."""
@@ -167,13 +163,13 @@ class TestZapierToken:
         assert zapier_token.api_token != old_token
 
     def test_reset(self, zapier_token: ZapierToken) -> None:
-        """Test reset method clears out recent_requests."""
+        """Test reset method clears out request_log."""
         zapier_token.log_request("foo")
-        assert zapier_token.recent_requests
+        assert zapier_token.request_log
         zapier_token.reset()
-        assert not zapier_token.recent_requests
+        assert not zapier_token.request_log
         zapier_token.refresh_from_db()
-        assert not zapier_token.recent_requests
+        assert not zapier_token.request_log
 
     def test_revoke(self, zapier_token: ZapierToken) -> None:
         """Test revoke method removes all scopes."""

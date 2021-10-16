@@ -21,7 +21,7 @@ class ZapierTokenAdmin(admin.ModelAdmin):
     list_select_related = ("user",)
     readonly_fields = (
         "api_token",
-        "recent_requests",
+        "request_log",
         "created_at",
         "last_updated_at",
     )

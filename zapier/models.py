@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from dateutil.parser import parse
+from dateutil.parser import parse as date_parse
 from django.conf import settings
 from django.contrib.postgres import fields as pg_fields
 from django.core.serializers.json import DjangoJSONEncoder
@@ -29,10 +29,12 @@ class ZapierToken(models.Model):
         help_text=_lazy("List of strings used to define access permissions."),
         blank=True,
     )
-    recent_requests = models.JSONField(
+    request_log = models.JSONField(
         default=dict,
         blank=True,
-        help_text=_lazy("{scope:timestamp} map of the latest API requests received."),
+        help_text=_lazy(
+            "{scope:(timestamp, id)} map of the latest API requests received."
+        ),
         encoder=DjangoJSONEncoder,
     )
     created_at = models.DateTimeField(default=tz_now)
@@ -91,36 +93,33 @@ class ZapierToken(models.Model):
         self.api_scopes = scopes
         self.save(update_fields=["api_scopes"])
 
-    def request_timestamp(self, scope: str) -> datetime | None:
+    def get_last_request(self, scope: str) -> tuple[datetime, int | None] | None:
         """
         Return the last request made for a given scope.
 
-        The timestamp is stored as a JSON, so we need to parse it out of
-        the str. If no matching scope request was found we return None.
-        If the scope arg is "*" (all / any scope) then we return the
-        latest timestamp across all scopes.
+        Returns a 2-tuple of timestamp, id representing the last trigger
+        request. The id can used for cursor-style paging.
 
         """
         if not scope:
             raise ValueError("Missing scope argument.")
-        if not self.recent_requests:
-            return None
         if scope == "*":
-            timestamp = max(self.recent_requests.values())
-        else:
-            timestamp = self.recent_requests.get(scope, None)
-        if timestamp:
-            return parse(timestamp)
-        return None
+            raise ValueError("Invalid scope argument.")
+        if not self.request_log:
+            return None
+        log = self.request_log.get(scope, None)
+        if not log:
+            return log
+        return date_parse(log[0]), log[1]
 
-    def log_request(self, scope: str) -> None:
-        """Update the recent_requests property."""
-        self.recent_requests[scope] = tz_now()
-        self.save(update_fields=["recent_requests"])
+    def log_request(self, scope: str, id: int | None = None) -> None:
+        """Update the request_log property."""
+        self.request_log[scope] = (tz_now(), id)
+        self.save(update_fields=["request_log"])
 
     def reset(self) -> None:
         """
-        Clear out the timestamps from recent_requests.
+        Clear out the timestamps from request_log.
 
         This is useful to force a refresh so the user will get the
         full original feed when they next try. Makes testing a lot
@@ -129,8 +128,8 @@ class ZapierToken(models.Model):
         when you are testing).
 
         """
-        self.recent_requests = {}
-        self.save(update_fields=["recent_requests"])
+        self.request_log = {}
+        self.save(update_fields=["request_log"])
 
     def refresh(self) -> None:
         """Update the api_token."""
