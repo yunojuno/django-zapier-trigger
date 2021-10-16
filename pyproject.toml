@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "zapier-triggers"
+name = "django-zapier-triggers"
 version = "0.1.0"
 description = "Simple Django app for managing Zapier triggers."
 license = "MIT"
