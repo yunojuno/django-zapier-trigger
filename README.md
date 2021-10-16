@@ -94,7 +94,8 @@ properties.
 # views.py
 @zapier.decorators.zapier_trigger("new_books")
 def new_books_trigger(request: HttpRequest) -> JsonResponse:
-    books = Book.objects.order_by("-id")[:25]
+    latest_id = request.auth.get_latest_id("new_books") or -1
+    books = Book.objects.filter(id__gt=latest_id).order_by("-id")[:25]
     data = [{"id": book.id, "title": book.title} for book in books]
     return JsonReponse(data)
 ```

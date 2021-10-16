@@ -93,26 +93,34 @@ class ZapierToken(models.Model):
         self.api_scopes = scopes
         self.save(update_fields=["api_scopes"])
 
-    def get_last_request(self, scope: str) -> tuple[datetime, int | None] | None:
-        """
-        Return the last request made for a given scope.
-
-        Returns a 2-tuple of timestamp, id representing the last trigger
-        request. The id can used for cursor-style paging.
-
-        """
+    def _scope_request(self, scope: str) -> tuple[str, int | str | None] | None:
         if not scope:
             raise ValueError("Missing scope argument.")
         if scope == "*":
             raise ValueError("Invalid scope argument.")
         if not self.request_log:
             return None
-        log = self.request_log.get(scope, None)
-        if not log:
-            return log
-        return date_parse(log[0]), log[1]
+        return self.request_log.get(scope, None)
 
-    def log_request(self, scope: str, id: int | None = None) -> None:
+    def get_latest_id(self, scope: str) -> str | int | None:
+        """
+        Return the id from the last request made for a given scope.
+
+        The response to a trigger request is a JSON-serializable list of
+        objects, each of which must have a unique id.
+
+        """
+        if not (request := self._scope_request(scope)):
+            return None
+        return request[1]
+
+    def get_latest_timestamp(self, scope: str) -> datetime | None:
+        """Return the timestamp from the last request made for a given scope."""
+        if not (request := self._scope_request(scope)):
+            return None
+        return date_parse(request[0])
+
+    def log_request(self, scope: str, id: str | int | None = None) -> None:
         """Update the request_log property."""
         self.request_log[scope] = (tz_now(), id)
         self.save(update_fields=["request_log"])

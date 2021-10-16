@@ -123,26 +123,29 @@ class TestZapierToken:
         assert zapier_token.api_scopes == scopes
 
     @pytest.mark.parametrize(
-        "request_log,scope,result",
+        "request_log,scope,id,timestamp",
         [
             (
                 {"foo": ("2021-10-14T19:32:20", None)},
                 "foo",
-                (date_parse("2021-10-14T19:32:20"), None),
+                None,
+                date_parse("2021-10-14T19:32:20"),
             ),
-            ({"bar": ("2021-10-14T19:32:20", None)}, "foo", None),
-            ({}, "foo", None),
+            ({"bar": ("2021-10-14T19:32:20", 1)}, "foo", None, None),
+            ({}, "foo", None, None),
         ],
     )
-    def test_get_last_request(
+    def test_get_last_id_timestamp(
         self,
         zapier_token: ZapierToken,
         request_log: dict,
         scope: str,
-        result: datetime,
+        id: int,
+        timestamp: datetime,
     ) -> None:
         zapier_token.request_log = request_log
-        assert zapier_token.get_last_request(scope) == result
+        assert zapier_token.get_latest_id(scope) == id
+        assert zapier_token.get_latest_timestamp(scope) == timestamp
 
     def test_log_request(self, zapier_token: ZapierToken) -> None:
         assert zapier_token.request_log == {}

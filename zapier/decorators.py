@@ -10,7 +10,7 @@ from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
 
 
-def get_latest_id(response: HttpResponse) -> int | None:
+def parse_content_id(response: HttpResponse) -> int | None:
     """
     Return the id of the first object in the response.
 
@@ -55,7 +55,7 @@ def zapier_trigger(scope: str) -> Callable:
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
             resp = view_func(request, *args, **kwargs)
-            request.auth.log_request(scope, get_latest_id(resp))
+            request.auth.log_request(scope, parse_content_id(resp))
             return resp
 
         return inner

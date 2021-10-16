@@ -28,4 +28,5 @@ def test_scope_mismatch(rf: RequestFactory, zapier_token: ZapierToken) -> None:
         resp = view(request)
     assert resp.status_code == 200
     zapier_token.refresh_from_db()
-    assert zapier_token.get_last_request("foo") == (now, 1)
+    assert zapier_token.get_latest_id("foo") == 1
+    assert zapier_token.get_latest_timestamp("foo") == now
