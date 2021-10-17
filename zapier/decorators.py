@@ -8,11 +8,12 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
+from zapier.types import ObjectId
 
 
-def parse_content_id(response: HttpResponse) -> int | None:
+def parse_content(response: HttpResponse) -> tuple[int, ObjectId]:
     """
-    Return the id of the first object in the response.
+    Return the count of objects and id of the first object in the response.
 
     This function assumes that the HttpResponse.content is a valid serialized
     JSON list of dicts, each of which contains an 'id' property. This is the
@@ -23,13 +24,15 @@ def parse_content_id(response: HttpResponse) -> int | None:
     """
     try:
         data = json.loads(response.content)
-        return int(data[0]["id"])
+        count = len(data)
     except json.decoder.JSONDecodeError:
-        return None
+        return (0, None)
+    try:
+        return (count, data[0]["id"])
     except IndexError:
-        return None
+        return (count, None)
     except AttributeError:
-        return None
+        return (count, None)
 
 
 def zapier_trigger(scope: str) -> Callable:
@@ -55,7 +58,9 @@ def zapier_trigger(scope: str) -> Callable:
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
             resp = view_func(request, *args, **kwargs)
-            request.auth.log_request(scope, parse_content_id(resp))
+            if scope and scope != "*":
+                count, obj_id = parse_content(resp)
+                request.auth.log_request(scope, count, obj_id)
             return resp
 
         return inner

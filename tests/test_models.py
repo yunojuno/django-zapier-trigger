@@ -81,7 +81,7 @@ class TestZapierToken:
         self,
         user: settings.AUTH_USER_MODEL,
         scopes_before: list[str],
-        add_scope: str,
+        add_scope: str | list,
         scopes_after: list[str],
     ) -> None:
         zapier_token = ZapierToken.objects.create(user=user, api_scopes=scopes_before)
@@ -123,15 +123,15 @@ class TestZapierToken:
         assert zapier_token.api_scopes == scopes
 
     @pytest.mark.parametrize(
-        "request_log,scope,id,timestamp",
+        "request_log,scope,timestamp,id",
         [
             (
-                {"foo": ("2021-10-14T19:32:20", None)},
+                {"foo": ("2021-10-14T19:32:20", 0, None)},
                 "foo",
-                None,
                 date_parse("2021-10-14T19:32:20"),
+                None,
             ),
-            ({"bar": ("2021-10-14T19:32:20", 1)}, "foo", None, None),
+            ({"bar": ("2021-10-14T19:32:20", 1, 1)}, "foo", None, None),
             ({}, "foo", None, None),
         ],
     )
@@ -151,11 +151,11 @@ class TestZapierToken:
         assert zapier_token.request_log == {}
         now = tz_now()
         with freeze_time(now):
-            zapier_token.log_request("foo")
+            zapier_token.log_request("foo", 1, 1)
         # pre-serialized form is the actual date
-        assert zapier_token.request_log == {"foo": (now, None)}
+        assert zapier_token.request_log == {"foo": (now, 1, 1)}
         zapier_token.refresh_from_db()
-        assert zapier_token.request_log == jsonify({"foo": (now, None)})
+        assert zapier_token.request_log == jsonify({"foo": (now, 1, 1)})
 
     def test_refresh(self, zapier_token: ZapierToken) -> None:
         """Test refresh method updates the api_token."""
@@ -167,7 +167,7 @@ class TestZapierToken:
 
     def test_reset(self, zapier_token: ZapierToken) -> None:
         """Test reset method clears out request_log."""
-        zapier_token.log_request("foo")
+        zapier_token.log_request("foo", 1, 1)
         assert zapier_token.request_log
         zapier_token.reset()
         assert not zapier_token.request_log

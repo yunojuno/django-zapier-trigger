@@ -12,6 +12,7 @@ from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
 from zapier.exceptions import TokenScopeError
+from zapier.types import ObjectId
 
 
 class ZapierToken(models.Model):
@@ -93,7 +94,7 @@ class ZapierToken(models.Model):
         self.api_scopes = scopes
         self.save(update_fields=["api_scopes"])
 
-    def _scope_request(self, scope: str) -> tuple[str, int | str | None] | None:
+    def _scope_request(self, scope: str) -> tuple[str, int, ObjectId | None] | None:
         if not scope:
             raise ValueError("Missing scope argument.")
         if scope == "*":
@@ -112,7 +113,7 @@ class ZapierToken(models.Model):
         """
         if not (request := self._scope_request(scope)):
             return None
-        return request[1]
+        return request[2]
 
     def get_latest_timestamp(self, scope: str) -> datetime | None:
         """Return the timestamp from the last request made for a given scope."""
@@ -120,9 +121,13 @@ class ZapierToken(models.Model):
             return None
         return date_parse(request[0])
 
-    def log_request(self, scope: str, id: str | int | None = None) -> None:
+    def log_request(self, scope: str, count: int | None, id: ObjectId) -> None:
         """Update the request_log property."""
-        self.request_log[scope] = (tz_now(), id)
+        previous_id = self.get_latest_id(scope)
+        timestamp = tz_now()
+        # If the Id hasn't changed, use the previous one
+        new_id = id if id else previous_id
+        self.request_log[scope] = (timestamp, count, new_id)
         self.save(update_fields=["request_log"])
 
     def reset(self) -> None:
