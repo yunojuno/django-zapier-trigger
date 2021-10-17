@@ -156,6 +156,10 @@ class TestZapierToken:
         assert zapier_token.request_log == {"foo": (now, 1, 1)}
         zapier_token.refresh_from_db()
         assert zapier_token.request_log == jsonify({"foo": (now, 1, 1)})
+        # ensure that object id is retained if no new results are found.
+        with freeze_time(now):
+            zapier_token.log_request("foo", 0, None)
+        assert zapier_token.request_log == {"foo": (now, 0, 1)}
 
     def test_refresh(self, zapier_token: ZapierToken) -> None:
         """Test refresh method updates the api_token."""
