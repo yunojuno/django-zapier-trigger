@@ -177,6 +177,13 @@ class TestZapierToken:
             zapier_token.log_scope_request("foo", response)
         assert zapier_token.request_log == {"foo": (now3, 0, 3)}
 
+        # fourth request is another scope
+        now4 = tz_now()
+        with freeze_time(now4):
+            response = JsonResponse([], safe=False)
+            zapier_token.log_scope_request("bar", response)
+        assert zapier_token.request_log == {"foo": (now3, 0, 3), "bar": (now4, 0, None)}
+
     def test_log_scope_request__unparseable_json(
         self, zapier_token: ZapierToken
     ) -> None:

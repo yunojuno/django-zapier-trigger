@@ -36,7 +36,7 @@ class ZapierToken(models.Model):
         default=dict,
         blank=True,
         help_text=_lazy(
-            "{scope:(timestamp, id)} map of the latest API requests received."
+            "{scope: (timestamp, count, obj_id)} map of the latest API request."
         ),
         encoder=DjangoJSONEncoder,
     )

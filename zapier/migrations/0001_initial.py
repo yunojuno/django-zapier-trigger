@@ -54,7 +54,7 @@ class Migration(migrations.Migration):
                         blank=True,
                         default=dict,
                         encoder=django.core.serializers.json.DjangoJSONEncoder,
-                        help_text="{scope:(timestamp, id)} map of the latest API requests received.",
+                        help_text="{scope: (timestamp, count, obj_id)} map of the latest API request.",
                     ),
                 ),
                 ("created_at", models.DateTimeField(default=django.utils.timezone.now)),
