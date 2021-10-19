@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from uuid import uuid4
 
 import pytest
@@ -14,6 +15,7 @@ def test_successful_authentication(client: Client, zapier_token: ZapierToken) ->
     url = reverse("zapier_token_check")
     resp = client.get(url, HTTP_X_API_TOKEN=str(zapier_token.api_token))
     assert resp.status_code == 200, resp.content
+    assert json.loads(resp.content) == {"scopes": zapier_token.api_scopes}
 
 
 @pytest.mark.django_db

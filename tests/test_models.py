@@ -5,11 +5,12 @@ from datetime import datetime
 import pytest
 from dateutil.parser import parse as date_parse
 from django.conf import settings
+from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
 from tests.conftest import jsonify
-from zapier.exceptions import TokenScopeError
+from zapier.exceptions import JsonResponseError, TokenScopeError
 from zapier.models import ZapierToken
 
 
@@ -147,19 +148,60 @@ class TestZapierToken:
         assert zapier_token.get_latest_id(scope) == id
         assert zapier_token.get_latest_timestamp(scope) == timestamp
 
-    def test_log_request(self, zapier_token: ZapierToken) -> None:
+    # tricky to parametrize, so this is three-in-one as the order is crucial
+    def test_log_scope_request(self, zapier_token: ZapierToken) -> None:
         assert zapier_token.request_log == {}
-        now = tz_now()
-        with freeze_time(now):
-            zapier_token.log_request("foo", 1, 1)
+
+        # first request - starts with a blank
+        now1 = tz_now()
+        with freeze_time(now1):
+            response = JsonResponse([{"id": 1}], safe=False)
+            zapier_token.log_scope_request("foo", response)
         # pre-serialized form is the actual date
-        assert zapier_token.request_log == {"foo": (now, 1, 1)}
+        assert zapier_token.request_log == {"foo": (now1, 1, 1)}
         zapier_token.refresh_from_db()
-        assert zapier_token.request_log == jsonify({"foo": (now, 1, 1)})
-        # ensure that object id is retained if no new results are found.
-        with freeze_time(now):
-            zapier_token.log_request("foo", 0, None)
-        assert zapier_token.request_log == {"foo": (now, 0, 1)}
+        # use jsonify to convert datetime to serialized form
+        assert zapier_token.request_log == jsonify({"foo": (now1, 1, 1)})
+
+        # second request has multiple items
+        now2 = tz_now()
+        with freeze_time(now2):
+            response = JsonResponse([{"id": 3}, {"id": 2}], safe=False)
+            zapier_token.log_scope_request("foo", response)
+        assert zapier_token.request_log == {"foo": (now2, 2, 3)}
+
+        # third request returns nothing - ensure max_id is retained
+        now3 = tz_now()
+        with freeze_time(now3):
+            response = JsonResponse([], safe=False)
+            zapier_token.log_scope_request("foo", response)
+        assert zapier_token.request_log == {"foo": (now3, 0, 3)}
+
+    def test_log_scope_request__unparseable_json(
+        self, zapier_token: ZapierToken
+    ) -> None:
+        with pytest.raises(JsonResponseError):
+            response = HttpResponse("foo")
+            zapier_token.log_scope_request("foo", response)
+        assert zapier_token.request_log == {}
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            "ok",
+            {"id": 0},
+            {"id": "foo"},
+            [{"foo": "bar"}],
+        ],
+    )
+    def test_log_scope_request__invalid_json(
+        self, content, zapier_token: ZapierToken
+    ) -> None:
+        # invalid json
+        with pytest.raises(JsonResponseError):
+            response = JsonResponse(content, safe=False)
+            zapier_token.log_scope_request("foo", response)
+        assert zapier_token.request_log == {}
 
     def test_refresh(self, zapier_token: ZapierToken) -> None:
         """Test refresh method updates the api_token."""
@@ -171,7 +213,8 @@ class TestZapierToken:
 
     def test_reset(self, zapier_token: ZapierToken) -> None:
         """Test reset method clears out request_log."""
-        zapier_token.log_request("foo", 1, 1)
+        response = JsonResponse([{"id": 1}], safe=False)
+        zapier_token.log_scope_request("foo", response)
         assert zapier_token.request_log
         zapier_token.reset()
         assert not zapier_token.request_log

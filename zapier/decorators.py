@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from functools import wraps
 from typing import Any, Callable
 
@@ -8,31 +7,6 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
-from zapier.types import ObjectId
-
-
-def parse_content(response: HttpResponse) -> tuple[int, ObjectId]:
-    """
-    Return the count of objects and id of the first object in the response.
-
-    This function assumes that the HttpResponse.content is a valid serialized
-    JSON list of dicts, each of which contains an 'id' property. This is the
-    mandated format for a Zapier trigger.
-
-    See https://platform.zapier.com/docs/triggers
-
-    """
-    try:
-        data = json.loads(response.content)
-        count = len(data)
-    except json.decoder.JSONDecodeError:
-        return (0, None)
-    try:
-        return (count, data[0]["id"])
-    except IndexError:
-        return (count, None)
-    except AttributeError:
-        return (count, None)
 
 
 def zapier_trigger(scope: str) -> Callable:
@@ -59,8 +33,7 @@ def zapier_trigger(scope: str) -> Callable:
                 return HttpResponseForbidden(ex)
             resp = view_func(request, *args, **kwargs)
             if scope and scope != "*":
-                count, obj_id = parse_content(resp)
-                request.auth.log_request(scope, count, obj_id)
+                request.auth.log_scope_request(scope, resp)
             return resp
 
         return inner

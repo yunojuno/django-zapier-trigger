@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from uuid import uuid4
 
@@ -8,10 +9,11 @@ from django.conf import settings
 from django.contrib.postgres import fields as pg_fields
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
+from django.http import JsonResponse
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.exceptions import TokenScopeError
+from zapier.exceptions import JsonResponseError, TokenScopeError
 from zapier.types import ObjectId
 
 
@@ -121,13 +123,31 @@ class ZapierToken(models.Model):
             return None
         return date_parse(request[0])
 
-    def log_request(self, scope: str, count: int | None, id: ObjectId) -> None:
-        """Update the request_log property."""
-        previous_id = self.get_latest_id(scope)
-        timestamp = tz_now()
+    def log_scope_request(self, scope: str, response: JsonResponse) -> None:
+        """
+        Log an API request/response.
+
+        This method parses the JSON in the response to work out
+        what is being returned, and logs the result.
+
+        """
+        try:
+            data = json.loads(response.content)
+        except json.decoder.JSONDecodeError as ex:
+            raise JsonResponseError("Invalid JSON") from ex
+        else:
+            count = len(data)
+        try:
+            max_id = data[0]["id"] if count else None
+        except (TypeError, KeyError, IndexError):
+            raise JsonResponseError(
+                "Invalid JSON - response contain a list of objects "
+                "each of which must have an 'id' attribute."
+            )
+
         # If the Id hasn't changed, use the previous one
-        new_id = id if id else previous_id
-        self.request_log[scope] = (timestamp, count, new_id)
+        new_id = max_id or self.get_latest_id(scope)
+        self.request_log[scope] = (tz_now(), count, new_id)
         self.save(update_fields=["request_log"])
 
     def reset(self) -> None:
