@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
+from dateutil.parser import parse as date_parse
 from django.conf import settings
 from django.contrib.postgres import fields as pg_fields
 from django.core.serializers.json import DjangoJSONEncoder
@@ -20,6 +21,11 @@ from zapier.types import ObjectId
 RequestLogTuple = tuple[datetime, int, ObjectId]
 
 
+def trunc_date(timestamp: datetime) -> datetime:
+    """Truncate microseconds from datetime."""
+    return date_parse(json.loads(json.dumps(timestamp, cls=DjangoJSONEncoder)))
+
+
 @dataclass
 class RequestLog:
     """Log request/response data."""
@@ -27,6 +33,11 @@ class RequestLog:
     timestamp: datetime
     count: int
     obj_id: ObjectId
+
+    def __post_init__(self) -> None:
+        # always truncate microseconds so timestamps will
+        # match before/after serialization
+        self.timestamp = trunc_date(self.timestamp)
 
     def as_tuple(self) -> RequestLogTuple:
         return (self.timestamp, self.count, self.obj_id)
@@ -80,6 +91,11 @@ class ZapierToken(models.Model):
 
     def __str__(self) -> str:
         return f"Zapier API token for {self.user}"
+
+    @property
+    def api_token_short(self) -> str:
+        """Return short version of the api_token - like short commit hash."""
+        return str(self.api_token).split("-")[0]
 
     def save(self, *args: object, **kwargs: object) -> None:
         if not self.last_updated_at:
@@ -140,7 +156,11 @@ class ZapierToken(models.Model):
         if not self.request_log:
             return None
         if log_tuple := self.request_log.get(scope, None):
-            return RequestLog(*log_tuple)
+            return RequestLog(
+                timestamp=date_parse(log_tuple[0]),
+                count=log_tuple[1],
+                obj_id=log_tuple[2],
+            )
         return None
 
     def log_scope_request(self, scope: str, response: JsonResponse) -> RequestLog:
@@ -151,11 +171,11 @@ class ZapierToken(models.Model):
         what is being returned, and logs the result.
 
         """
-        last_request_log = self.get_request_log(scope)
+        old_request_log = self.get_request_log(scope)
         new_request_log = RequestLog.parse_response(response)
         # If the Id hasn't changed, use the previous one
-        if not new_request_log.obj_id and last_request_log:
-            new_request_log.obj_id = last_request_log.obj_id
+        if not new_request_log.obj_id and old_request_log:
+            new_request_log.obj_id = old_request_log.obj_id
         self.request_log[scope] = new_request_log.as_tuple()
         self.save(update_fields=["request_log"])
         return new_request_log

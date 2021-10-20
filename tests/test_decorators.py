@@ -1,32 +1,55 @@
 from __future__ import annotations
 
 import pytest
-from dateutil.parser import parse as date_parse
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.test import RequestFactory
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
-from tests.conftest import jsonify
 from zapier.decorators import zapier_trigger
-from zapier.models import ZapierToken
+from zapier.models import RequestLog, ZapierToken, trunc_date
 
 
 @pytest.mark.django_db
-def test_scope_mismatch(rf: RequestFactory, zapier_token: ZapierToken) -> None:
-    request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
-    request.auth = zapier_token
+class TestZapierTrigger:
+    @pytest.mark.parametrize("scope", ["*", "foo"])
+    def test_decorator(
+        self, scope: str, rf: RequestFactory, zapier_token: ZapierToken
+    ) -> None:
+        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request.auth = zapier_token
 
-    @zapier_trigger("foo")
-    def view(request: HttpRequest) -> HttpResponse:
-        return JsonResponse([{"id": 1}], safe=False)
+        @zapier_trigger(scope)
+        def view(request: HttpRequest) -> HttpResponse:
+            return JsonResponse([{"id": "ObjA"}, {"id": "ObjB"}], safe=False)
 
-    # we have to JSON encode the time in order to chop the microseconds
-    # off the date - as that happens during JSONField serialization.
-    now = date_parse(jsonify(tz_now()))
-    with freeze_time(now):
+        # we have to JSON encode the time in order to chop the microseconds
+        # off the date - as that happens during JSONField serialization.
+        now = trunc_date(tz_now())
+        with freeze_time(now):
+            resp = view(request)
+        assert resp.status_code == 200
+        assert resp.headers["X-Api-Scope"] == scope
+        assert resp.headers["X-Api-Token"] == zapier_token.api_token_short
+        if scope == "*":
+            assert "X-Api-Count" not in resp.headers
+            assert "X-Api-ObjectId" not in resp.headers
+            return
+        assert resp.headers["X-Api-Count"] == "2"
+        assert resp.headers["X-Api-ObjectId"] == "ObjA"
+        zapier_token.refresh_from_db()
+        assert zapier_token.get_request_log("foo") == RequestLog(now, 2, "ObjA")
+
+    def test_scope_mismatch(
+        self, rf: RequestFactory, zapier_token: ZapierToken
+    ) -> None:
+        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request.auth = zapier_token
+        zapier_token.set_scopes(["bar"])
+
+        @zapier_trigger("foo")
+        def view(request: HttpRequest) -> HttpResponse:
+            return JsonResponse([{"id": 1}], safe=False)
+
         resp = view(request)
-    assert resp.status_code == 200
-    zapier_token.refresh_from_db()
-    assert zapier_token.get_latest_id("foo") == 1
-    assert zapier_token.get_latest_timestamp("foo") == now
+        assert resp.status_code == 403

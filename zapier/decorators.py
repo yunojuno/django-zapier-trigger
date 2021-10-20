@@ -32,7 +32,7 @@ def zapier_trigger(scope: str) -> Callable:
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
             resp: JsonResponse = view_func(request, *args, **kwargs)
-            resp.headers["X-Api-Token"] = request.auth.api_token
+            resp.headers["X-Api-Token"] = request.auth.api_token_short
             resp.headers["X-Api-Scope"] = scope
             if scope and scope != "*":
                 log = request.auth.log_scope_request(scope, resp)
