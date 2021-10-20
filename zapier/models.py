@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
-from dateutil.parser import parse as date_parse
 from django.conf import settings
 from django.contrib.postgres import fields as pg_fields
 from django.core.serializers.json import DjangoJSONEncoder
@@ -17,30 +16,23 @@ from django.utils.translation import gettext_lazy as _lazy
 from zapier.exceptions import JsonResponseError, TokenScopeError
 from zapier.types import ObjectId
 
-# return type for the logging of requests
-RequestLogTuple = tuple[datetime, int, ObjectId]
 
-
-def trunc_date(timestamp: datetime) -> datetime:
-    """Truncate microseconds from datetime."""
-    return date_parse(json.loads(json.dumps(timestamp, cls=DjangoJSONEncoder)))
+def encode_timestamp(timestamp: datetime) -> str:
+    """Truncate microseconds from datetime and JSON encode."""
+    return json.loads(json.dumps(timestamp, cls=DjangoJSONEncoder))
 
 
 @dataclass
 class RequestLog:
     """Log request/response data."""
 
-    timestamp: datetime
+    timestamp: str
     count: int
     obj_id: ObjectId
 
-    def __post_init__(self) -> None:
-        # always truncate microseconds so timestamps will
-        # match before/after serialization
-        self.timestamp = trunc_date(self.timestamp)
-
-    def as_tuple(self) -> RequestLogTuple:
-        return (self.timestamp, self.count, self.obj_id)
+    def values(self) -> list[datetime | int | ObjectId]:
+        """Return list as serialized in ZapierToken.request_log field."""
+        return [self.timestamp, self.count, self.obj_id]
 
     @classmethod
     def parse_response(self, response: JsonResponse) -> RequestLog:
@@ -60,7 +52,7 @@ class RequestLog:
                 "Invalid JSON - response contain a list of objects "
                 "each of which must have an 'id' attribute."
             )
-        return RequestLog(tz_now(), count, max_id)
+        return RequestLog(encode_timestamp(tz_now()), count, max_id)
 
 
 class ZapierToken(models.Model):
@@ -156,11 +148,7 @@ class ZapierToken(models.Model):
         if not self.request_log:
             return None
         if log_tuple := self.request_log.get(scope, None):
-            return RequestLog(
-                timestamp=date_parse(log_tuple[0]),
-                count=log_tuple[1],
-                obj_id=log_tuple[2],
-            )
+            return RequestLog(*log_tuple)
         return None
 
     def log_scope_request(self, scope: str, response: JsonResponse) -> RequestLog:
@@ -176,7 +164,7 @@ class ZapierToken(models.Model):
         # If the Id hasn't changed, use the previous one
         if not new_request_log.obj_id and old_request_log:
             new_request_log.obj_id = old_request_log.obj_id
-        self.request_log[scope] = new_request_log.as_tuple()
+        self.request_log[scope] = new_request_log.values()
         self.save(update_fields=["request_log"])
         return new_request_log
 

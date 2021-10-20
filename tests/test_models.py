@@ -6,9 +6,8 @@ from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
-from tests.conftest import jsonify
 from zapier.exceptions import JsonResponseError, TokenScopeError
-from zapier.models import RequestLog, ZapierToken, trunc_date
+from zapier.models import RequestLog, ZapierToken, encode_timestamp
 
 
 @pytest.mark.django_db
@@ -147,34 +146,42 @@ class TestZapierToken:
         # first request - starts with a blank
         now1 = tz_now()
         with freeze_time(now1):
+            timestamp1 = encode_timestamp(now1)
             response = JsonResponse([{"id": 1}], safe=False)
             zapier_token.log_scope_request("foo", response)
         # pre-serialized form is the actual date
-        assert zapier_token.request_log == {"foo": (trunc_date(now1), 1, 1)}
+        assert zapier_token.request_log == {"foo": [timestamp1, 1, 1]}
         zapier_token.refresh_from_db()
-        # use jsonify to convert datetime to serialized form
-        assert zapier_token.request_log == jsonify({"foo": (now1, 1, 1)})
+        assert zapier_token.request_log == {"foo": [timestamp1, 1, 1]}
 
         # second request has multiple items
-        now2 = trunc_date(tz_now())
+        now2 = tz_now()
         with freeze_time(now2):
+            timestamp2 = encode_timestamp(now2)
             response = JsonResponse([{"id": 3}, {"id": 2}], safe=False)
             zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {"foo": (now2, 2, 3)}
+        assert zapier_token.request_log == {"foo": [timestamp2, 2, 3]}
+        zapier_token.refresh_from_db()
 
         # third request returns nothing - ensure max_id is retained
-        now3 = trunc_date(tz_now())
+        now3 = tz_now()
         with freeze_time(now3):
+            timestamp3 = encode_timestamp(now3)
             response = JsonResponse([], safe=False)
             zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {"foo": (now3, 0, 3)}
+        assert zapier_token.request_log == {"foo": [timestamp3, 0, 3]}
+        zapier_token.refresh_from_db()
 
         # fourth request is another scope
-        now4 = trunc_date(tz_now())
+        now4 = tz_now()
         with freeze_time(now4):
+            timestamp4 = encode_timestamp(now4)
             response = JsonResponse([], safe=False)
             zapier_token.log_scope_request("bar", response)
-        assert zapier_token.request_log == {"foo": (now3, 0, 3), "bar": (now4, 0, None)}
+        assert zapier_token.request_log == {
+            "foo": [timestamp3, 0, 3],
+            "bar": [timestamp4, 0, None],
+        }
 
     def test_log_scope_request__unparseable_json(
         self, zapier_token: ZapierToken

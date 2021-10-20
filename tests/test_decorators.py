@@ -7,7 +7,7 @@ from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
 from zapier.decorators import zapier_trigger
-from zapier.models import RequestLog, ZapierToken, trunc_date
+from zapier.models import RequestLog, ZapierToken, encode_timestamp
 
 
 @pytest.mark.django_db
@@ -25,7 +25,7 @@ class TestZapierTrigger:
 
         # we have to JSON encode the time in order to chop the microseconds
         # off the date - as that happens during JSONField serialization.
-        now = trunc_date(tz_now())
+        now = tz_now()
         with freeze_time(now):
             resp = view(request)
         assert resp.status_code == 200
@@ -38,7 +38,9 @@ class TestZapierTrigger:
         assert resp.headers["X-Api-Count"] == "2"
         assert resp.headers["X-Api-ObjectId"] == "ObjA"
         zapier_token.refresh_from_db()
-        assert zapier_token.get_request_log("foo") == RequestLog(now, 2, "ObjA")
+        assert zapier_token.get_request_log("foo") == (
+            RequestLog(encode_timestamp(now), 2, "ObjA")
+        )
 
     def test_scope_mismatch(
         self, rf: RequestFactory, zapier_token: ZapierToken
