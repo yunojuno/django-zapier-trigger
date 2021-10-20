@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-zapier-triggers"
-version = "0.1.beta1"
+version = "0.1.beta2"
 description = "Simple Django app for managing Zapier triggers."
 license = "MIT"
 authors = ["YunoJuno <code@yunojuno.com>"]
@@ -13,12 +13,10 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
     "Framework :: Django",
-    "Framework :: Django :: 3.1",
     "Framework :: Django :: 3.2",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -26,8 +24,8 @@ classifiers = [
 packages = [{ include = "zapier" }]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-django = "^3.1 || ^4.0"
+python = "^3.8"
+django = "^3.2 || ^4.0"
 python-dateutil = "*"
 
 [tool.poetry.dev-dependencies]
@@ -49,6 +47,7 @@ pytest = "*"
 pytest-cov = "*"
 pytest-django = "*"
 tox = "*"
+types-freezegun = "*"
 types-python-dateutil = "*"
 
 [build-system]

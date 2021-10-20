@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-from datetime import datetime
-
 import pytest
-from dateutil.parser import parse as date_parse
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
-from tests.conftest import jsonify
 from zapier.exceptions import JsonResponseError, TokenScopeError
-from zapier.models import ZapierToken
+from zapier.models import RequestLog, ZapierToken, encode_timestamp
 
 
 @pytest.mark.django_db
@@ -124,29 +120,24 @@ class TestZapierToken:
         assert zapier_token.api_scopes == scopes
 
     @pytest.mark.parametrize(
-        "request_log,scope,timestamp,id",
+        "request_log,result",
         [
             (
                 {"foo": ("2021-10-14T19:32:20", 0, None)},
-                "foo",
-                date_parse("2021-10-14T19:32:20"),
-                None,
+                RequestLog("2021-10-14T19:32:20", 0, None),
             ),
-            ({"bar": ("2021-10-14T19:32:20", 1, 1)}, "foo", None, None),
-            ({}, "foo", None, None),
+            ({"bar": ("2021-10-14T19:32:20", 1, 1)}, None),
+            ({}, None),
         ],
     )
-    def test_get_last_id_timestamp(
+    def test_get_request_log(
         self,
         zapier_token: ZapierToken,
         request_log: dict,
-        scope: str,
-        id: int,
-        timestamp: datetime,
+        result: RequestLog | None,
     ) -> None:
         zapier_token.request_log = request_log
-        assert zapier_token.get_latest_id(scope) == id
-        assert zapier_token.get_latest_timestamp(scope) == timestamp
+        assert zapier_token.get_request_log("foo") == result
 
     # tricky to parametrize, so this is three-in-one as the order is crucial
     def test_log_scope_request(self, zapier_token: ZapierToken) -> None:
@@ -155,34 +146,42 @@ class TestZapierToken:
         # first request - starts with a blank
         now1 = tz_now()
         with freeze_time(now1):
+            timestamp1 = encode_timestamp(now1)
             response = JsonResponse([{"id": 1}], safe=False)
             zapier_token.log_scope_request("foo", response)
         # pre-serialized form is the actual date
-        assert zapier_token.request_log == {"foo": (now1, 1, 1)}
+        assert zapier_token.request_log == {"foo": [timestamp1, 1, 1]}
         zapier_token.refresh_from_db()
-        # use jsonify to convert datetime to serialized form
-        assert zapier_token.request_log == jsonify({"foo": (now1, 1, 1)})
+        assert zapier_token.request_log == {"foo": [timestamp1, 1, 1]}
 
         # second request has multiple items
         now2 = tz_now()
         with freeze_time(now2):
+            timestamp2 = encode_timestamp(now2)
             response = JsonResponse([{"id": 3}, {"id": 2}], safe=False)
             zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {"foo": (now2, 2, 3)}
+        assert zapier_token.request_log == {"foo": [timestamp2, 2, 3]}
+        zapier_token.refresh_from_db()
 
         # third request returns nothing - ensure max_id is retained
         now3 = tz_now()
         with freeze_time(now3):
+            timestamp3 = encode_timestamp(now3)
             response = JsonResponse([], safe=False)
             zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {"foo": (now3, 0, 3)}
+        assert zapier_token.request_log == {"foo": [timestamp3, 0, 3]}
+        zapier_token.refresh_from_db()
 
         # fourth request is another scope
         now4 = tz_now()
         with freeze_time(now4):
+            timestamp4 = encode_timestamp(now4)
             response = JsonResponse([], safe=False)
             zapier_token.log_scope_request("bar", response)
-        assert zapier_token.request_log == {"foo": (now3, 0, 3), "bar": (now4, 0, None)}
+        assert zapier_token.request_log == {
+            "foo": [timestamp3, 0, 3],
+            "bar": [timestamp4, 0, None],
+        }
 
     def test_log_scope_request__unparseable_json(
         self, zapier_token: ZapierToken

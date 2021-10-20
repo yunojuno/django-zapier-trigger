@@ -9,7 +9,8 @@ triggers](https://platform.zapier.com/docs/triggers#polling-trigger).
 
 ### Version support
 
-This app supports Django 3.1+, and Python 3.7+.
+This app supports Django 3.2+ (`HttpResponse.headers`), and Python 3.8+
+(`:=` operator).
 
 ## How does it work?
 
