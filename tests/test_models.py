@@ -145,8 +145,8 @@ class TestZapierToken:
         timestamp: datetime,
     ) -> None:
         zapier_token.request_log = request_log
-        assert zapier_token.get_latest_id(scope) == id
-        assert zapier_token.get_latest_timestamp(scope) == timestamp
+        assert zapier_token.get_request_log(scope).object_id == id
+        assert zapier_token.get_request_log(scope).timestamp == timestamp
 
     # tricky to parametrize, so this is three-in-one as the order is crucial
     def test_log_scope_request(self, zapier_token: ZapierToken) -> None:

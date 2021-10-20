@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
-from dateutil.parser import parse as date_parse
 from django.conf import settings
 from django.contrib.postgres import fields as pg_fields
 from django.core.serializers.json import DjangoJSONEncoder
@@ -15,6 +15,41 @@ from django.utils.translation import gettext_lazy as _lazy
 
 from zapier.exceptions import JsonResponseError, TokenScopeError
 from zapier.types import ObjectId
+
+# return type for the logging of requests
+RequestLogTuple = tuple[datetime, int, ObjectId]
+
+
+@dataclass
+class RequestLog:
+    """Log request/response data."""
+
+    timestamp: datetime
+    count: int
+    obj_id: ObjectId
+
+    def as_tuple(self) -> RequestLogTuple:
+        return (self.timestamp, self.count, self.obj_id)
+
+    @classmethod
+    def parse_response(self, response: JsonResponse) -> RequestLog:
+        """Parse out timestamp, count and object_id for Response."""
+        try:
+            data = json.loads(response.content)
+        except json.decoder.JSONDecodeError as ex:
+            raise JsonResponseError("Invalid JSON") from ex
+        try:
+            obj_ids = [obj["id"] for obj in data]
+            # objects must be in reverse chronological order,
+            # so the first object in the list is the latest.
+            max_id = obj_ids[0] if obj_ids else None
+            count = len(obj_ids)
+        except (TypeError, KeyError, IndexError):
+            raise JsonResponseError(
+                "Invalid JSON - response contain a list of objects "
+                "each of which must have an 'id' attribute."
+            )
+        return RequestLog(tz_now(), count, max_id)
 
 
 class ZapierToken(models.Model):
@@ -96,34 +131,19 @@ class ZapierToken(models.Model):
         self.api_scopes = scopes
         self.save(update_fields=["api_scopes"])
 
-    def _scope_request(self, scope: str) -> tuple[str, int, ObjectId | None] | None:
+    def get_request_log(self, scope: str) -> RequestLog | None:
+        """Return a single scoped request log."""
         if not scope:
             raise ValueError("Missing scope argument.")
         if scope == "*":
             raise ValueError("Invalid scope argument.")
         if not self.request_log:
             return None
-        return self.request_log.get(scope, None)
+        if log_tuple := self.request_log.get(scope, None):
+            return RequestLog(*log_tuple)
+        return None
 
-    def get_latest_id(self, scope: str) -> str | int | None:
-        """
-        Return the id from the last request made for a given scope.
-
-        The response to a trigger request is a JSON-serializable list of
-        objects, each of which must have a unique id.
-
-        """
-        if not (request := self._scope_request(scope)):
-            return None
-        return request[2]
-
-    def get_latest_timestamp(self, scope: str) -> datetime | None:
-        """Return the timestamp from the last request made for a given scope."""
-        if not (request := self._scope_request(scope)):
-            return None
-        return date_parse(request[0])
-
-    def log_scope_request(self, scope: str, response: JsonResponse) -> None:
+    def log_scope_request(self, scope: str, response: JsonResponse) -> RequestLog:
         """
         Log an API request/response.
 
@@ -131,24 +151,14 @@ class ZapierToken(models.Model):
         what is being returned, and logs the result.
 
         """
-        try:
-            data = json.loads(response.content)
-        except json.decoder.JSONDecodeError as ex:
-            raise JsonResponseError("Invalid JSON") from ex
-        else:
-            count = len(data)
-        try:
-            max_id = data[0]["id"] if count else None
-        except (TypeError, KeyError, IndexError):
-            raise JsonResponseError(
-                "Invalid JSON - response contain a list of objects "
-                "each of which must have an 'id' attribute."
-            )
-
+        last_request_log = self.get_request_log(scope)
+        new_request_log = RequestLog.parse_response(response)
         # If the Id hasn't changed, use the previous one
-        new_id = max_id or self.get_latest_id(scope)
-        self.request_log[scope] = (tz_now(), count, new_id)
+        if not new_request_log.obj_id and last_request_log:
+            new_request_log.obj_id = last_request_log.obj_id
+        self.request_log[scope] = new_request_log.as_tuple()
         self.save(update_fields=["request_log"])
+        return new_request_log
 
     def reset(self) -> None:
         """

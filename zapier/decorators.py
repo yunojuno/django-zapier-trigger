@@ -3,7 +3,7 @@ from __future__ import annotations
 from functools import wraps
 from typing import Any, Callable
 
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
@@ -31,9 +31,13 @@ def zapier_trigger(scope: str) -> Callable:
                 request.auth.check_scope(scope)
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
-            resp = view_func(request, *args, **kwargs)
+            resp: JsonResponse = view_func(request, *args, **kwargs)
+            resp.headers["X-Api-Token"] = request.auth.api_token
+            resp.headers["X-Api-Scope"] = scope
             if scope and scope != "*":
-                request.auth.log_scope_request(scope, resp)
+                log = request.auth.log_scope_request(scope, resp)
+                resp.headers["X-Api-Count"] = log.count
+                resp.headers["X-Api-ObjectId"] = log.obj_id
             return resp
 
         return inner
