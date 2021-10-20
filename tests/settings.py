@@ -9,7 +9,7 @@ USE_L10N = True
 
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgres://postgres:postgres@localhost:5433/postgres"
+        default="postgres://postgres:postgres@localhost:5432/postgres"
     )
 }
 
