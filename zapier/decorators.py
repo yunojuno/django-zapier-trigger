@@ -4,9 +4,29 @@ from functools import wraps
 from typing import Any, Callable
 
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.views import View
 
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
+
+
+def extract_request_arg(*args: Any) -> HttpRequest:
+    """
+    Extract HttpRequest arg from a list of *args.
+
+    Used to extract request from args whether this is a function or a
+    class method.
+
+    """
+    # if a function is being decorated the first arg will be a request
+    if isinstance(args[0], HttpRequest):
+        return args[0]
+    # if a CBV method is being decorated the second arg will be a request
+    elif isinstance(args[0], View):
+        return args[1]
+    # if it's neither of the above, kill it.
+    else:
+        raise ValueError("Invalid method / function for decorator")
 
 
 def zapier_trigger(scope: str) -> Callable:
@@ -25,13 +45,14 @@ def zapier_trigger(scope: str) -> Callable:
 
     def decorator(view_func: Callable) -> Callable:
         @wraps(view_func)
-        def inner(request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+        def inner(*args: Any, **kwargs: Any) -> HttpResponse:
+            request = extract_request_arg(*args)
             try:
                 authenticate_request(request)
                 request.auth.check_scope(scope)
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
-            resp: JsonResponse = view_func(request, *args, **kwargs)
+            resp: JsonResponse = view_func(*args, **kwargs)
             resp.headers["X-Api-Token"] = request.auth.api_token_short
             resp.headers["X-Api-Scope"] = scope
             if scope and scope != "*":

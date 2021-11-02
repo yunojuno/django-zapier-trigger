@@ -9,6 +9,8 @@ from freezegun import freeze_time
 from zapier.decorators import zapier_trigger
 from zapier.models import RequestLog, ZapierToken, encode_timestamp
 
+from .views import CBV
+
 
 @pytest.mark.django_db
 class TestZapierTrigger:
@@ -55,3 +57,19 @@ class TestZapierTrigger:
 
         resp = view(request)
         assert resp.status_code == 403
+
+    def test_cbv(self, rf: RequestFactory, zapier_token: ZapierToken) -> None:
+        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request.auth = zapier_token
+        view = CBV.as_view()
+        resp = view(request)
+        assert resp.status_code == 200, resp
+        assert resp.content == b"{}"
+
+    def test_not_a_view(self) -> None:
+        @zapier_trigger("foo")
+        def not_a_view(request: int) -> None:
+            pass
+
+        with pytest.raises(ValueError):
+            _ = not_a_view(1)
