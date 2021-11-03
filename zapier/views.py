@@ -60,8 +60,6 @@ class PollingTriggerView(View):
             raise NotImplementedError(
                 "serializer_class is not set - please override get_data method."
             )
-        # if you are not used a DRF Serializer class, you should
-        # override this method.
         return list(self.serializer_class(qs[:25], many=True).data)
 
     def get(self, request: HttpRequest) -> JsonResponse:
