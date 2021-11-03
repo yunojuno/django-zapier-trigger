@@ -6,10 +6,10 @@ from django.test import RequestFactory
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
-from zapier.decorators import zapier_trigger
+from zapier.decorators import polling_trigger
 from zapier.models import RequestLog, ZapierToken, encode_timestamp
 
-from .views import CBV
+from .views import MyTriggerView
 
 
 @pytest.mark.django_db
@@ -21,7 +21,7 @@ class TestZapierTrigger:
         request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
         request.auth = zapier_token
 
-        @zapier_trigger(scope)
+        @polling_trigger(scope)
         def view(request: HttpRequest) -> HttpResponse:
             return JsonResponse([{"id": "ObjA"}, {"id": "ObjB"}], safe=False)
 
@@ -51,7 +51,7 @@ class TestZapierTrigger:
         request.auth = zapier_token
         zapier_token.set_scopes(["bar"])
 
-        @zapier_trigger("foo")
+        @polling_trigger("foo")
         def view(request: HttpRequest) -> HttpResponse:
             return JsonResponse([{"id": 1}], safe=False)
 
@@ -61,15 +61,7 @@ class TestZapierTrigger:
     def test_cbv(self, rf: RequestFactory, zapier_token: ZapierToken) -> None:
         request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
         request.auth = zapier_token
-        view = CBV.as_view()
+        view = MyTriggerView.as_view()
         resp = view(request)
         assert resp.status_code == 200, resp
-        assert resp.content == b"{}"
-
-    def test_not_a_view(self) -> None:
-        @zapier_trigger("foo")
-        def not_a_view(request: int) -> None:
-            pass
-
-        with pytest.raises(ValueError):
-            _ = not_a_view(1)
+        assert resp.content == b"[]"

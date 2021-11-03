@@ -84,7 +84,7 @@ of each object that is returned - you can read more about deduplication
 here - https://zapier.com/help/create/basics/data-deduplication-in-zaps
 
 This package is responsible for the endpoint authentication - everything
-else is up to you. You can use the `zapier_trigger` view function
+else is up to you. You can use the `polling_trigger` view function
 decorator to guard the functions that you set up as triggers. The
 decorator takes a required string argument, which is a scope that must
 match the incoming `request.auth`. The decorator handles request
@@ -93,7 +93,7 @@ properties.
 
 ```python
 # views.py
-@zapier.decorators.zapier_trigger("new_books")
+@zapier.decorators.polling_trigger("new_books")
 def new_books_trigger(request: HttpRequest) -> JsonResponse:
     latest_id = request.auth.get_latest_id("new_books") or -1
     books = Book.objects.filter(id__gt=latest_id).order_by("-id")[:25]
