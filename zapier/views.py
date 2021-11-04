@@ -53,13 +53,18 @@ class PollingTriggerView(View):
         """
         Convert QuerySet into list of object dicts.
 
-        If the serializer_class is set, this method will use it (on the
-        assumption that it is a DRF serializer).
+        If the serializer_class is set, this method will use it as if it were
+        a DRF serializer. If you are rolling your own, then make sure that it
+        supports the DRF calling pattern:
+
+            data = Serializer(queryset, many=True).data
 
         If the serializer_class is not set it falls back to calling `values`
         on the queryset (which converts each object to a dict). If `values`
         has already been called (in the `get_queryset` method), then we just
-        return the list as-is.
+        return the list as-is. It is STRONGLY recommended that you set explicit
+        fields using `values("foo", "bar")` - serializing an entire object's
+        fields
 
         """
         if self.serializer_class:
@@ -68,7 +73,11 @@ class PollingTriggerView(View):
         # the data. https://github.com/django/django/blob/main/django/db/models/query.py#L869  # noqa
         if qs._iterable_class == ValuesIterable:
             return list(qs)
-        return list(qs.values())
+        # Warning klaxon: this is very dangerous (serializing entire objects)
+        raise ValueError(
+            "If you are not using a serializer_class you must call `values` on "
+            "the queryset return by `get_queryset`."
+        )
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """

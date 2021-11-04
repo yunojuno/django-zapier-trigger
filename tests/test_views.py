@@ -30,32 +30,12 @@ def test_unsuccessful_authentication(client: Client, zapier_token: ZapierToken) 
 
 @pytest.mark.django_db
 def test_pollingtriggerview_1(rf: RequestFactory, zapier_token: ZapierToken) -> None:
-    user1 = zapier_token.user
-    user2, user3 = UserFactory.create_batch(2)
+    """View that does not explicitly select values list."""
     request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
     request.auth = zapier_token
     view = UserTriggerView1.as_view()
-    resp = view(request)
-    assert resp.status_code == 200
-    data = json.loads(resp.content)
-    assert len(data) == 3
-    assert set(data[0].keys()) == {
-        "date_joined",
-        "email",
-        "first_name",
-        "id",
-        "is_active",
-        "is_staff",
-        "is_superuser",
-        "last_login",
-        "last_name",
-        "password",
-        "username",
-    }
-    # confirm they are in reverse chronological order
-    assert data[0]["id"] == user3.id
-    assert data[1]["id"] == user2.id
-    assert data[2]["id"] == user1.id
+    with pytest.raises(ValueError):
+        _ = view(request)
 
 
 @pytest.mark.django_db

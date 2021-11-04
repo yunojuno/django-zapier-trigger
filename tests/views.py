@@ -10,7 +10,7 @@ User = get_user_model()
 
 
 class UserTriggerView1(PollingTriggerView):
-    """Test view that serializes the whole User object."""
+    """Test view that serializes the whole User object - FAILS."""
 
     scope = "test_scope"
 
