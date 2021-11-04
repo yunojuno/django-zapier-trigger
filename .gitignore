@@ -4,6 +4,7 @@
 .coverage
 .tox
 .venv
+dist
 htmlcov
 node_modules
 poetry.lock

@@ -20,6 +20,21 @@ strings representing API triggers that are supported. In effect it uses
 the token UUID for authentication, and the token scopes for
 authorization.
 
+A trigger itself is just a view that returns some data in the prescribed
+Zapier format - which in Python terms is a JSON-serializable list of dicts,
+each of which must contain an `id` attr:
+
+```python
+[
+    {"id": 1, "name": "Fred"},
+    { ... }
+]
+```
+
+For simple scenarios where you want to return a queryset, there is a base
+CBV `PollingTriggerView` which you can subclass.
+
+
 ## Installation
 
 Install the package using pip / poetry

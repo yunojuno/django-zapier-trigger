@@ -3,13 +3,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from django.conf import settings
 from django.db.models import QuerySet
+from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, JsonResponse
 from django.views import View
 
 from zapier.decorators import polling_trigger
 from zapier.models import ZapierToken
+from zapier.settings import DEFAULT_PAGE_SIZE
 from zapier.types import ObjectId
 
 logger = logging.getLogger(__name__)
@@ -31,9 +32,10 @@ def zapier_token_check(request: HttpRequest) -> JsonResponse:
 class PollingTriggerView(View):
 
     scope: str = ""
+    page_size = DEFAULT_PAGE_SIZE
     serializer_class: Any | None = None
 
-    def get_queryset(self, user: settings.AUTH_USER_MODEL) -> QuerySet:
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
         raise NotImplementedError
 
     def get_last_object_id(self, zapier_token: ZapierToken) -> ObjectId:
@@ -47,20 +49,26 @@ class PollingTriggerView(View):
             return last_request.obj_id or -1
         return -1
 
-    def get_data(self, qs: QuerySet) -> list[dict]:
+    def serialize(self, qs: QuerySet) -> list[dict]:
         """
         Convert QuerySet into list of object dicts.
 
-        By default this assumes that the serializer_class is a DRF
-        serializer. If it is not, you should set serializer_class to
-        None, and override this method.
+        If the serializer_class is set, this method will use it (on the
+        assumption that it is a DRF serializer).
+
+        If the serializer_class is not set it falls back to calling `values`
+        on the queryset (which converts each object to a dict). If `values`
+        has already been called (in the `get_queryset` method), then we just
+        return the list as-is.
 
         """
-        if not self.serializer_class:
-            raise NotImplementedError(
-                "serializer_class is not set - please override get_data method."
-            )
-        return list(self.serializer_class(qs[:25], many=True).data)
+        if self.serializer_class:
+            return list(self.serializer_class(qs, many=True).data)
+        # the get_queryset method has already called `values(...)` on
+        # the data. https://github.com/django/django/blob/main/django/db/models/query.py#L869  # noqa
+        if qs._iterable_class == ValuesIterable:
+            return list(qs)
+        return list(qs.values())
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """
@@ -77,8 +85,12 @@ class PollingTriggerView(View):
         @polling_trigger(self.scope)
         def _get(request: HttpRequest) -> JsonResponse:
             id = self.get_last_object_id(request.auth)
-            qs = self.get_queryset(request.user).filter(id__gt=id).order_by("-id")
-            data = self.get_data(qs)
+            qs = (
+                self.get_queryset(request)
+                .filter(id__gt=id)
+                .order_by("-id")[:DEFAULT_PAGE_SIZE]
+            )
+            data = self.serialize(qs)
             return JsonResponse(data, safe=False)
 
         return _get(request)

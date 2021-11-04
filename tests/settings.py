@@ -71,6 +71,8 @@ LOGGING = {
         #     'propagate': True,
         #     'level': 'WARNING',
         # },
+        "faker": {"level": "WARNING"},
+        "factory": {"level": "WARNING"},
     },
 }
 
