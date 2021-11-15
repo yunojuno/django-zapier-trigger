@@ -28,9 +28,9 @@ class RequestLog:
 
     timestamp: str
     count: int
-    obj_id: ObjectId
+    obj_id: ObjectId | None
 
-    def values(self) -> list[datetime | int | ObjectId]:
+    def values(self) -> list[datetime | int | ObjectId | None]:
         """Return list as serialized in ZapierToken.request_log field."""
         return [self.timestamp, self.count, self.obj_id]
 

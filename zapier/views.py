@@ -9,11 +9,13 @@ from django.http import HttpRequest, JsonResponse
 from django.views import View
 
 from zapier.decorators import polling_trigger
-from zapier.models import ZapierToken
 from zapier.settings import DEFAULT_PAGE_SIZE
 from zapier.types import ObjectId
 
 logger = logging.getLogger(__name__)
+
+# marker to ensure that we get all objects if none specified
+MIN_OBJECT_ID = -1
 
 
 @polling_trigger("*")
@@ -38,46 +40,19 @@ class PollingTriggerView(View):
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         raise NotImplementedError
 
-    def get_last_object_id(self, zapier_token: ZapierToken) -> ObjectId:
-        """
-        Return the id of the last object fetched for this scope.
+    def get_page_size(self, request: HttpRequest) -> int:
+        """Override to control page size."""
+        return self.page_size
 
-        Returns -1 if no recent object was fetched.
+    def get_serializer(self, request: HttpRequest) -> Any:
+        """Override this to control serializer selection."""
+        return self.serializer_class
 
-        """
-        if last_request := zapier_token.get_request_log(self.scope):
-            return last_request.obj_id or -1
-        return -1
-
-    def serialize(self, qs: QuerySet) -> list[dict]:
-        """
-        Convert QuerySet into list of object dicts.
-
-        If the serializer_class is set, this method will use it as if it were
-        a DRF serializer. If you are rolling your own, then make sure that it
-        supports the DRF calling pattern:
-
-            data = Serializer(queryset, many=True).data
-
-        If the serializer_class is not set it falls back to calling `values`
-        on the queryset (which converts each object to a dict). If `values`
-        has already been called (in the `get_queryset` method), then we just
-        return the list as-is. It is STRONGLY recommended that you set explicit
-        fields using `values("foo", "bar")` - serializing an entire object's
-        fields
-
-        """
-        if self.serializer_class:
-            return list(self.serializer_class(qs, many=True).data)
-        # the get_queryset method has already called `values(...)` on
-        # the data. https://github.com/django/django/blob/main/django/db/models/query.py#L869  # noqa
-        if qs._iterable_class == ValuesIterable:
-            return list(qs)
-        # Warning klaxon: this is very dangerous (serializing entire objects)
-        raise ValueError(
-            "If you are not using a serializer_class you must call `values` on "
-            "the queryset return by `get_queryset`."
-        )
+    def get_object_id(self, request: HttpRequest) -> ObjectId | None:
+        """Return the id of the last object fetched for this scope."""
+        if last_request := request.auth.get_request_log(self.scope):
+            return last_request.obj_id
+        return None
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """
@@ -91,15 +66,47 @@ class PollingTriggerView(View):
         if not self.scope:
             raise ValueError("View scope is not set")
 
+        serializer = self.get_serializer(request)
+
         @polling_trigger(self.scope)
         def _get(request: HttpRequest) -> JsonResponse:
-            id = self.get_last_object_id(request.auth)
-            qs = (
-                self.get_queryset(request)
-                .filter(id__gt=id)
-                .order_by("-id")[:DEFAULT_PAGE_SIZE]
-            )
-            data = self.serialize(qs)
+            page_size = self.get_page_size(request)
+            qs = self.get_queryset(request)
+            id = self.get_object_id(request) or MIN_OBJECT_ID
+            # filtering and ordering is done in the view to ensure that
+            # output is in correct order regardless of get_queryset
+            # output.
+            qs = qs.filter(id__gt=id).order_by("-id")[:page_size]
+            data = serialize(qs, serializer)
             return JsonResponse(data, safe=False)
 
         return _get(request)
+
+
+def serialize(qs: QuerySet, serializer: Any | None) -> list[dict]:
+    """
+    Convert QuerySet into list of object dicts.
+
+    If the serializer_class is set, this method will use it as if it were
+    a DRF serializer. If you are rolling your own, then make sure that it
+    supports the DRF calling pattern:
+
+        data = Serializer(queryset, many=True).data
+
+    If the serializer_class is not set it checks whether the queryset
+    has been called with `values`. If so, it can return the list as-is
+    (`values` returns a list of dicts). If not, this method will raise
+    a ValueError.
+
+    """
+    if serializer:
+        return list(serializer(qs, many=True).data)
+    # the get_queryset method has already called `values(...)` on the data:
+    # https://github.com/django/django/blob/main/django/db/models/query.py#L869
+    if qs._iterable_class == ValuesIterable:
+        return list(qs)
+    # Warning klaxon: this is very dangerous (serializing entire objects)
+    raise ValueError(
+        "If you are not using a serializer_class you must call `values` on "
+        "the queryset returned by `get_queryset`."
+    )
