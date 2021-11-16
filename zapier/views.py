@@ -49,7 +49,17 @@ class PollingTriggerView(View):
         return self.serializer_class
 
     def get_object_id(self, request: HttpRequest) -> ObjectId | None:
-        """Return the id of the last object fetched for this scope."""
+        """
+        Return the id of the last object fetched for this scope.
+
+        If the request contains a header 'X-Api-Object-Id' then this
+        will be used - this is useful for testing purposes - by setting
+        this to -1 on a request you ensure that you will get back the
+        full dataset.
+
+        """
+        if "X-Api-Object-Id" in request.headers:
+            return int(request.headers["X-Api-Object-Id"])
         if last_request := request.auth.get_request_log(self.scope):
             return last_request.obj_id
         return None
@@ -75,7 +85,8 @@ class PollingTriggerView(View):
             id = self.get_object_id(request) or MIN_OBJECT_ID
             # filtering and ordering is done in the view to ensure that
             # output is in correct order regardless of get_queryset
-            # output.
+            # output - you can override what is _in_ the queryset, but
+            # not how it is ordered - this is mandated by Zapier.
             qs = qs.filter(id__gt=id).order_by("-id")[:page_size]
             data = serialize(qs, serializer)
             return JsonResponse(data, safe=False)

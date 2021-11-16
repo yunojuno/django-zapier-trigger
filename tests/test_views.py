@@ -48,6 +48,19 @@ def test_usernameview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
     assert resp.status_code == 200
     data = json.loads(resp.content)
     assert data == [{"id": user.id, "username": user.username}]
+    # confirm that calling twice results in no new results
+    resp = view(request)
+    assert resp.status_code == 200
+    data = json.loads(resp.content)
+    assert data == []
+    # unless we are using test mode
+    request = rf.get(
+        "/", HTTP_X_API_TOKEN=str(zapier_token.api_token), HTTP_X_API_OBJECT_ID=-1
+    )
+    resp = view(request)
+    assert resp.status_code == 200
+    data = json.loads(resp.content)
+    assert data == [{"id": user.id, "username": user.username}]
 
 
 @pytest.mark.django_db
