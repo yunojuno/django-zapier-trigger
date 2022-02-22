@@ -36,6 +36,7 @@ class PollingTriggerView(View):
     scope: str = ""
     page_size = DEFAULT_PAGE_SIZE
     serializer_class: Any | None = None
+    sort_by = "id"
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         raise NotImplementedError
@@ -87,8 +88,9 @@ class PollingTriggerView(View):
             # output is in correct order regardless of get_queryset
             # output - you can override what is _in_ the queryset, but
             # not how it is ordered - this is mandated by Zapier.
-            qs = qs.filter(id__gt=id).order_by("-id")[:page_size]
-            data = serialize(qs, serializer)
+            qs = qs.filter(**{f"{self.sort_by}__gt": id})
+            qs = qs.order_by(f"-{self.sort_by}")
+            data = serialize(qs[:page_size], serializer)
             return JsonResponse(data, safe=False)
 
         return _get(request)
