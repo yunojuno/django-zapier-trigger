@@ -3,11 +3,9 @@ from __future__ import annotations
 import pytest
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
-from django.utils.timezone import now as tz_now
-from freezegun import freeze_time
 
 from zapier.exceptions import JsonResponseError, TokenScopeError
-from zapier.models import RequestLog, ZapierToken, encode_timestamp
+from zapier.models import ZapierToken, ZapierTokenRequest
 
 
 @pytest.mark.django_db
@@ -120,94 +118,24 @@ class TestZapierToken:
         assert zapier_token.api_scopes == scopes
 
     @pytest.mark.parametrize(
-        "request_log,result",
+        "content,expected",
         [
-            (
-                {"foo": ("2021-10-14T19:32:20", 0, None)},
-                RequestLog("2021-10-14T19:32:20", 0, None),
-            ),
-            ({"bar": ("2021-10-14T19:32:20", 1, 1)}, None),
-            ({}, None),
+            ([], None),
+            ([{"id": 1}], {"id": 1}),
+            ([{"id": 2}, {"id": 1}], {"id": 2}),
+            ([{"id": "foo"}, {"id": "bar"}], {"id": "foo"}),
         ],
     )
-    def test_get_request_log(
-        self,
-        zapier_token: ZapierToken,
-        request_log: dict,
-        result: RequestLog | None,
+    def test_get_most_recent_object(
+        self, zapier_token: ZapierToken, content: list[dict], expected: dict, **kwargs
     ) -> None:
-        zapier_token.request_log = request_log
-        assert zapier_token.get_request_log("foo") == result
-
-    # tricky to parametrize, so this is three-in-one as the order is crucial
-    def test_log_scope_request(self, zapier_token: ZapierToken) -> None:
-        assert zapier_token.request_log == {}
+        assert zapier_token.requests.count() == 0
+        assert zapier_token.get_most_recent_object("foo") is None
 
         # first request - starts with a blank
-        now1 = tz_now()
-        with freeze_time(now1):
-            timestamp1 = encode_timestamp(now1)
-            response = JsonResponse([{"id": 1}], safe=False)
-            zapier_token.log_scope_request("foo", response)
-        # pre-serialized form is the actual date
-        assert zapier_token.request_log == {"foo": [timestamp1, 1, 1]}
-        zapier_token.refresh_from_db()
-        assert zapier_token.request_log == {"foo": [timestamp1, 1, 1]}
-
-        # second request has multiple items
-        now2 = tz_now()
-        with freeze_time(now2):
-            timestamp2 = encode_timestamp(now2)
-            response = JsonResponse([{"id": 3}, {"id": 2}], safe=False)
-            zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {"foo": [timestamp2, 2, 3]}
-        zapier_token.refresh_from_db()
-
-        # third request returns nothing - ensure max_id is retained
-        now3 = tz_now()
-        with freeze_time(now3):
-            timestamp3 = encode_timestamp(now3)
-            response = JsonResponse([], safe=False)
-            zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {"foo": [timestamp3, 0, 3]}
-        zapier_token.refresh_from_db()
-
-        # fourth request is another scope
-        now4 = tz_now()
-        with freeze_time(now4):
-            timestamp4 = encode_timestamp(now4)
-            response = JsonResponse([], safe=False)
-            zapier_token.log_scope_request("bar", response)
-        assert zapier_token.request_log == {
-            "foo": [timestamp3, 0, 3],
-            "bar": [timestamp4, 0, None],
-        }
-
-    def test_log_scope_request__unparseable_json(
-        self, zapier_token: ZapierToken
-    ) -> None:
-        with pytest.raises(JsonResponseError):
-            response = HttpResponse("foo")
-            zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {}
-
-    @pytest.mark.parametrize(
-        "content",
-        [
-            "ok",
-            {"id": 0},
-            {"id": "foo"},
-            [{"foo": "bar"}],
-        ],
-    )
-    def test_log_scope_request__invalid_json(
-        self, content, zapier_token: ZapierToken
-    ) -> None:
-        # invalid json
-        with pytest.raises(JsonResponseError):
-            response = JsonResponse(content, safe=False)
-            zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log == {}
+        response = JsonResponse(content, safe=False)
+        ZapierTokenRequest.objects.create(zapier_token, "foo", response.content)
+        assert zapier_token.get_most_recent_object("foo") == expected
 
     def test_refresh(self, zapier_token: ZapierToken) -> None:
         """Test refresh method updates the api_token."""
@@ -217,16 +145,6 @@ class TestZapierToken:
         zapier_token.refresh_from_db()
         assert zapier_token.api_token != old_token
 
-    def test_reset(self, zapier_token: ZapierToken) -> None:
-        """Test reset method clears out request_log."""
-        response = JsonResponse([{"id": 1}], safe=False)
-        zapier_token.log_scope_request("foo", response)
-        assert zapier_token.request_log
-        zapier_token.reset()
-        assert not zapier_token.request_log
-        zapier_token.refresh_from_db()
-        assert not zapier_token.request_log
-
     def test_revoke(self, zapier_token: ZapierToken) -> None:
         """Test revoke method removes all scopes."""
         old_scopes = zapier_token.api_scopes
@@ -235,3 +153,24 @@ class TestZapierToken:
         assert zapier_token.api_scopes == []
         zapier_token.refresh_from_db()
         assert zapier_token.api_scopes == []
+
+
+class ZapierTokenRequestModelTests:
+    def test_create__unparseable_json(self, zapier_token: ZapierToken) -> None:
+        with pytest.raises(JsonResponseError):
+            response = HttpResponse("foo")
+            ZapierTokenRequest.objects.create(zapier_token, "foo", response.content)
+
+    @pytest.mark.parametrize(
+        "content",
+        [
+            "ok",
+            {"id": 0},
+            {"id": "foo"},
+        ],
+    )
+    def test_create__invalid_json(self, content, zapier_token: ZapierToken) -> None:
+        # invalid json
+        with pytest.raises(JsonResponseError):
+            response = JsonResponse(content, safe=False)
+            ZapierTokenRequest.objects.create(zapier_token, "foo", response)

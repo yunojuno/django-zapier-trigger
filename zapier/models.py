@@ -1,58 +1,21 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
 from django.conf import settings
-from django.contrib.postgres import fields as pg_fields
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
-from django.http import JsonResponse
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
 from zapier.exceptions import JsonResponseError, TokenScopeError
-from zapier.types import ObjectId
 
 
 def encode_timestamp(timestamp: datetime) -> str:
     """Truncate microseconds from datetime and JSON encode."""
     return json.loads(json.dumps(timestamp, cls=DjangoJSONEncoder))
-
-
-@dataclass
-class RequestLog:
-    """Log request/response data."""
-
-    timestamp: str
-    count: int
-    obj_id: ObjectId | None
-
-    def values(self) -> list[datetime | int | ObjectId | None]:
-        """Return list as serialized in ZapierToken.request_log field."""
-        return [self.timestamp, self.count, self.obj_id]
-
-    @classmethod
-    def parse_response(self, response: JsonResponse) -> RequestLog:
-        """Parse out timestamp, count and object_id for Response."""
-        try:
-            data = json.loads(response.content)
-        except json.decoder.JSONDecodeError as ex:
-            raise JsonResponseError("Invalid JSON") from ex
-        try:
-            obj_ids = [obj["id"] for obj in data]
-            # objects must be in reverse chronological order,
-            # so the first object in the list is the latest.
-            max_id = obj_ids[0] if obj_ids else None
-            count = len(obj_ids)
-        except (TypeError, KeyError, IndexError):
-            raise JsonResponseError(
-                "Invalid JSON - response contain a list of objects "
-                "each of which must have an 'id' attribute."
-            )
-        return RequestLog(encode_timestamp(tz_now()), count, max_id)
 
 
 class ZapierToken(models.Model):
@@ -64,19 +27,10 @@ class ZapierToken(models.Model):
     api_token = models.UUIDField(
         default=uuid4, help_text=_lazy("API token for use in Zapier integration")
     )
-    api_scopes = pg_fields.ArrayField(
-        base_field=models.CharField(max_length=50),
+    api_scopes = models.JSONField(
         default=list,
         help_text=_lazy("List of strings used to define access permissions."),
         blank=True,
-    )
-    request_log = models.JSONField(
-        default=dict,
-        blank=True,
-        help_text=_lazy(
-            "{scope: (timestamp, count, obj_id)} map of the latest API request."
-        ),
-        encoder=DjangoJSONEncoder,
     )
     created_at = models.DateTimeField(default=tz_now)
     last_updated_at = models.DateTimeField()
@@ -139,49 +93,6 @@ class ZapierToken(models.Model):
         self.api_scopes = scopes
         self.save(update_fields=["api_scopes"])
 
-    def get_request_log(self, scope: str) -> RequestLog | None:
-        """Return a single scoped request log."""
-        if not scope:
-            raise ValueError("Missing scope argument.")
-        if scope == "*":
-            raise ValueError("Invalid scope argument.")
-        if not self.request_log:
-            return None
-        if log_tuple := self.request_log.get(scope, None):
-            return RequestLog(*log_tuple)
-        return None
-
-    def log_scope_request(self, scope: str, response: JsonResponse) -> RequestLog:
-        """
-        Log an API request/response.
-
-        This method parses the JSON in the response to work out
-        what is being returned, and logs the result.
-
-        """
-        old_request_log = self.get_request_log(scope)
-        new_request_log = RequestLog.parse_response(response)
-        # If the Id hasn't changed, use the previous one
-        if not new_request_log.obj_id and old_request_log:
-            new_request_log.obj_id = old_request_log.obj_id
-        self.request_log[scope] = new_request_log.values()
-        self.save(update_fields=["request_log"])
-        return new_request_log
-
-    def reset(self) -> None:
-        """
-        Clear out the timestamps from request_log.
-
-        This is useful to force a refresh so the user will get the
-        full original feed when they next try. Makes testing a lot
-        easier - as otherwise you effectively kill the feed on the
-        first request (as no new briefs are really being created
-        when you are testing).
-
-        """
-        self.request_log = {}
-        self.save(update_fields=["request_log"])
-
     def refresh(self) -> None:
         """Update the api_token."""
         self.api_token = uuid4()
@@ -191,3 +102,69 @@ class ZapierToken(models.Model):
         """Remove all scopes - renders token obsolete."""
         self.api_scopes = []
         self.save(update_fields=["api_scopes"])
+
+    def get_most_recent_object(self, scope: str) -> dict | None:
+        """Return the most recent object logged."""
+        if log := (
+            self.requests.filter(scope=scope)
+            .exclude(count=0)
+            .order_by("timestamp")
+            .last()
+        ):
+            return log.most_recent_object
+        return None
+
+
+class ZapierTokenRequestManager(models.Manager):
+    def create(
+        self, token: ZapierToken, scope: str, content: str | bytes
+    ) -> ZapierTokenRequest:
+        try:
+            data = json.loads(content)
+        except json.decoder.JSONDecodeError as ex:
+            raise JsonResponseError("Invalid JSON") from ex
+        return super().create(
+            token=token,
+            scope=scope,
+            data=data,
+            count=len(data) if data else 0,
+        )
+
+
+class ZapierTokenRequest(models.Model):
+    """Log of each request received."""
+
+    token = models.ForeignKey(
+        ZapierToken, on_delete=models.CASCADE, related_name="requests"
+    )
+    scope = models.CharField(max_length=50)
+    timestamp = models.DateTimeField(default=tz_now)
+    data = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=_lazy("The JSON response sent to Zapier."),
+        encoder=DjangoJSONEncoder,
+    )
+    count = models.IntegerField(
+        default=0,
+        help_text=_lazy("Denormalised object count, used for filtering"),
+    )
+
+    objects: ZapierTokenRequestManager = ZapierTokenRequestManager()
+
+    class Meta:
+        get_latest_by = "timestamp"
+        ordering = ("timestamp",)
+
+    @property
+    def most_recent_object(self) -> dict | None:
+        """
+        Return the first object in the list.
+
+        The data returned to Zapier must be in reverse chronological
+        order, so the most recent object is the first in the array.
+
+        """
+        if not self.data:
+            return None
+        return self.data[0]
