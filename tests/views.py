@@ -12,11 +12,11 @@ from __future__ import annotations
 
 from typing import Any, Iterable
 
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
+from zapier.models import ZapierToken
 from zapier.views import PollingTriggerView
 
 User = get_user_model()
@@ -41,14 +41,14 @@ class UserView(PollingTriggerView):
 
     scope = "test_scope"
 
-    def get_queryset(self, user: settings.AUTH_USER_MODEL) -> QuerySet:
+    def get_queryset(self, token: ZapierToken) -> QuerySet:
         return User.objects.all()
 
 
 class UsernameView(UserView):
     """Test view that serializes a subset of fields."""
 
-    def get_queryset(self, user: settings.AUTH_USER_MODEL) -> QuerySet:
+    def get_queryset(self, token: ZapierToken) -> QuerySet:
         return User.objects.all().values("id", "username")
 
 
@@ -62,6 +62,6 @@ class FirstOrLastNameView(UserView):
     """Test view that uses a dynamic serializer."""
 
     def get_serializer(self, request: HttpRequest) -> Any:
-        if request.user.is_anonymous:
+        if request.user.first_name == "Fred":
             return FirstNameSerializer
         return FullNameSerializer

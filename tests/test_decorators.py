@@ -6,13 +6,14 @@ from django.test import RequestFactory
 from django.utils.timezone import now as tz_now
 from freezegun import freeze_time
 
+from zapier import http as http_headers
 from zapier.decorators import polling_trigger
-from zapier.models import RequestLog, ZapierToken, encode_timestamp
+from zapier.models import ZapierToken
 
 
 @pytest.mark.django_db
 class TestZapierTrigger:
-    @pytest.mark.parametrize("scope", ["*", "foo"])
+    @pytest.mark.parametrize("scope", ["foo"])
     def test_decorator(
         self, scope: str, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
@@ -29,18 +30,10 @@ class TestZapierTrigger:
         with freeze_time(now):
             resp = view(request)
         assert resp.status_code == 200
-        assert resp.headers["X-Api-Scope"] == scope
-        assert resp.headers["X-Api-Token"] == zapier_token.api_token_short
-        if scope == "*":
-            assert "X-Api-Count" not in resp.headers
-            assert "X-Api-ObjectId" not in resp.headers
-            return
-        assert resp.headers["X-Api-Count"] == "2"
-        assert resp.headers["X-Api-ObjectId"] == "ObjA"
-        zapier_token.refresh_from_db()
-        assert zapier_token.get_request_log("foo") == (
-            RequestLog(encode_timestamp(now), 2, "ObjA")
-        )
+        assert resp.headers[http_headers.HEADER_SCOPE] == scope
+        assert resp.headers[http_headers.HEADER_TOKEN] == zapier_token.api_token_short
+        assert resp.headers[http_headers.HEADER_COUNT] == "2"
+        assert resp.headers[http_headers.HEADER_OBJECT_ID] == "ObjA"
 
     def test_scope_mismatch(
         self, rf: RequestFactory, zapier_token: ZapierToken

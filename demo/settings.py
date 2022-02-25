@@ -1,17 +1,11 @@
 from os import path
 
-import dj_database_url
-
 DEBUG = True
 TEMPLATE_DEBUG = True
 USE_TZ = True
 USE_L10N = True
 
-DATABASES = {
-    "default": dj_database_url.config(
-        default="postgres://postgres:postgres@localhost:5432/postgres"
-    )
-}
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "demo.db"}}
 
 INSTALLED_APPS = (
     "django.contrib.admin",
@@ -21,6 +15,7 @@ INSTALLED_APPS = (
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "zapier",
+    "demo",
 )
 
 MIDDLEWARE = [

@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.views import debug
 
+from demo.views import NewBooksById, NewBooksByTimestamp
 from demo.views import test as test_view
 from zapier.views import zapier_token_check
 
@@ -12,4 +13,6 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("zapier/auth-check/", zapier_token_check, name="zapier_token_check"),
     path("zapier/test/<int:number>/", test_view, name="test"),
+    path("zapier/books/id/", NewBooksById.as_view()),
+    path("zapier/books/timestamp/", NewBooksByTimestamp.as_view()),
 ]

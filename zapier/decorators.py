@@ -7,6 +7,8 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonRe
 
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
+from zapier.http import HEADER_COUNT, HEADER_OBJECT_ID, HEADER_SCOPE, HEADER_TOKEN
+from zapier.models import ZapierTokenRequest
 
 
 def polling_trigger(scope: str) -> Callable:
@@ -28,19 +30,29 @@ def polling_trigger(scope: str) -> Callable:
         def inner(
             request: HttpRequest, *view_args: object, **view_kwargs: object
         ) -> HttpResponse:
+            if scope == "*":
+                raise ValueError(
+                    'Invalid scope ("*") - functions must have an explicit scope.'
+                )
             try:
                 authenticate_request(request)
                 request.auth.check_scope(scope)
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
-            resp: JsonResponse = view_func(request, *view_args, **view_kwargs)
-            resp.headers["X-Api-Token"] = request.auth.api_token_short
-            resp.headers["X-Api-Scope"] = scope
-            if scope and scope != "*":
-                log = request.auth.log_scope_request(scope, resp)
-                resp.headers["X-Api-Count"] = log.count
-                resp.headers["X-Api-ObjectId"] = log.obj_id
-            return resp
+            response: JsonResponse = view_func(request, *view_args, **view_kwargs)
+            log = ZapierTokenRequest.objects.create(
+                token=request.auth,
+                scope=scope,
+                content=response.content,
+            )
+            if scope == "authenticate":
+                return response
+            response.headers[HEADER_TOKEN] = request.auth.api_token_short
+            response.headers[HEADER_SCOPE] = scope
+            response.headers[HEADER_COUNT] = log.count
+            if log.data:
+                response.headers[HEADER_OBJECT_ID] = log.data[0]["id"]
+            return response
 
         return inner
 
