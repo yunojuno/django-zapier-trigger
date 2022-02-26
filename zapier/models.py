@@ -5,6 +5,7 @@ from datetime import datetime
 from uuid import uuid4
 
 from django.conf import settings
+from django.contrib.auth.models import AnonymousUser
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now as tz_now
@@ -16,6 +17,11 @@ from zapier.exceptions import JsonResponseError, TokenScopeError
 def encode_timestamp(timestamp: datetime) -> str:
     """Truncate microseconds from datetime and JSON encode."""
     return json.loads(json.dumps(timestamp, cls=DjangoJSONEncoder))
+
+
+class ZapierUser(AnonymousUser):
+    """Subclass of AnonymousUser used to represent the poller on requests."""
+
 
 
 class ZapierToken(models.Model):

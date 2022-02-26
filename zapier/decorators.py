@@ -8,7 +8,7 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonRe
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
 from zapier.http import HEADER_COUNT, HEADER_OBJECT_ID, HEADER_SCOPE, HEADER_TOKEN
-from zapier.models import ZapierTokenRequest
+from zapier.models import ZapierTokenRequest, ZapierUser
 
 
 def polling_trigger(scope: str) -> Callable:
@@ -30,27 +30,27 @@ def polling_trigger(scope: str) -> Callable:
         def inner(
             request: HttpRequest, *view_args: object, **view_kwargs: object
         ) -> HttpResponse:
+            if not scope:
+                raise ValueError("Missing scope.")
             if scope == "*":
-                raise ValueError(
-                    'Invalid scope ("*") - functions must have an explicit scope.'
-                )
+                raise ValueError('Invalid view scope ("*").')
             try:
                 authenticate_request(request)
                 request.auth.check_scope(scope)
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
             response: JsonResponse = view_func(request, *view_args, **view_kwargs)
+            response.headers[HEADER_TOKEN] = request.auth.api_token_short
+            response.headers[HEADER_SCOPE] = scope
+            response.headers.setdefault(HEADER_COUNT, "0")
+            response.headers.setdefault(HEADER_OBJECT_ID, "")
             log = ZapierTokenRequest.objects.create(
                 token=request.auth,
                 scope=scope,
                 content=response.content,
             )
-            if scope == "authenticate":
-                return response
-            response.headers[HEADER_TOKEN] = request.auth.api_token_short
-            response.headers[HEADER_SCOPE] = scope
-            response.headers[HEADER_COUNT] = log.count
             if log.data:
+                response.headers[HEADER_COUNT] = log.count
                 response.headers[HEADER_OBJECT_ID] = log.data[0]["id"]
             return response
 

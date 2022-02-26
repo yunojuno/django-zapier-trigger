@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.http import HttpRequest
 
 from zapier.exceptions import MissingTokenHeader, TokenUserError, UnknownToken
-from zapier.models import ZapierToken
+from zapier.models import ZapierToken, ZapierUser
 
 
 def authenticate_request(request: HttpRequest) -> None:
@@ -23,11 +23,7 @@ def authenticate_request(request: HttpRequest) -> None:
         raise UnknownToken("Unknown API token.")
     if not obj.user.is_active:
         raise TokenUserError("API token user is disabled.")
-    if (
-        hasattr(request, "user")
-        and request.user.is_authenticated
-        and request.user != obj.user
-    ):
-        raise TokenUserError("Request / token user mismatch.")
-    request.user = obj.user
+    if hasattr(request, "user") and request.user.is_authenticated:
+        raise TokenUserError("Request user must be anonymous.")
+    request.user = ZapierUser()
     request.auth = obj

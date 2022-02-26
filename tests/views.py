@@ -41,15 +41,23 @@ class UserView(PollingTriggerView):
 
     scope = "test_scope"
 
-    def get_queryset(self, token: ZapierToken) -> QuerySet:
+    def get_queryset(self) -> QuerySet:
         return User.objects.all()
 
 
 class UsernameView(UserView):
     """Test view that serializes a subset of fields."""
 
-    def get_queryset(self, token: ZapierToken) -> QuerySet:
-        return User.objects.all().values("id", "username")
+    sort_key = lambda obj: obj["username"]
+
+    def get_queryset(self) -> QuerySet:
+        return User.objects.exclude(id=self.token.user_id).values("id", "username")
+
+
+class ReverseUsernameView(UsernameView):
+    """Test view that serializes a subset of fields in reverse order."""
+
+    sort_reverse = False
 
 
 class FullNameView(UserView):
@@ -61,7 +69,7 @@ class FullNameView(UserView):
 class FirstOrLastNameView(UserView):
     """Test view that uses a dynamic serializer."""
 
-    def get_serializer(self, request: HttpRequest) -> Any:
-        if request.user.first_name == "Fred":
+    def get_serializer(self) -> Any:
+        if self.token.user.first_name == "Fred":
             return FirstNameSerializer
         return FullNameSerializer

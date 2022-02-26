@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Callable
 
 from django.db.models import QuerySet
 from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.utils.decorators import method_decorator
 from django.views import View
 
 from zapier.auth import authenticate_request
@@ -67,39 +68,77 @@ class PollingTriggerView(View):
     scope: str = "REPLACE_WITH_REAL_SCOPE"
     page_size = DEFAULT_PAGE_SIZE
     serializer_class: Any | None = None
+    sort_key: Callable = lambda obj: obj["id"]
+    sort_reverse: bool = True
 
-    def get_queryset(self, token: ZapierToken) -> QuerySet:
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.token: ZapierToken = None
+
+    def most_recent_object(self) -> dict:
+        """Return the last JSON object that was returned for this token/scope."""
+        if not self.token:
+            raise Exception("Missing view token.")
+        return self.token.get_most_recent_object(self.scope)
+
+    def most_recent_object_id(self) -> str | None:
+        """Return the id of the last JSON object that was returned."""
+        if last_obj := self.most_recent_object():
+            return last_obj["id"]
+        return None
+
+    def serialize(self, queryset: QuerySet) -> list[dict]:
+        """
+        Convert QuerySet into list of object dicts.
+
+        If the serializer_class is set, this method will use it as if it
+        were a DRF serializer. If you are rolling your own, then make
+        sure that it supports the DRF calling pattern:
+
+            data = Serializer(queryset, many=True).data
+
+        If the serializer_class is not set it checks whether the
+        queryset has been called with `values`. If so, it can return the
+        list as-is (`values` returns a list of dicts). If not, this
+        method will raise a ValueError.
+
+        """
+        data: list[dict] | None = None
+        if serializer := self.get_serializer():
+            data = list(serializer(queryset, many=True).data)
+
+        # the get_queryset method has already called `values(...)` on the data:
+        # https://github.com/django/django/blob/main/django/db/models/query.py#L869
+        if queryset._iterable_class == ValuesIterable:
+            data = list(queryset)
+
+        if data is not None:
+            # HACK: we need the class instance not the object instance,
+            # otherwise we end up passing 'self' to the lambda
+            data.sort(key=self.__class__.sort_key, reverse=self.sort_reverse)
+            return data
+
+        # Warning klaxon: this is very dangerous (serializing entire objects)
+        raise ValueError(
+            "If you are not using a serializer_class you must call `values` on "
+            "the queryset returned by `get_queryset`."
+        )
+
+    def get_queryset(self) -> QuerySet:
         """Return the next queryset - must be in reverse chrono order."""
         raise NotImplementedError
 
-    def get_page_size(self, request: HttpRequest) -> int:
+    def get_page_size(self) -> int:
         """Override to control page size."""
         return self.page_size
 
-    def get_serializer(self, request: HttpRequest) -> Any:
+    def get_serializer(self) -> Any:
         """Override this to control serializer selection."""
         return self.serializer_class
 
+    @method_decorator(polling_trigger(scope))
     def get(self, request: HttpRequest) -> JsonResponse:
-        """
-        Return the serialized data for the trigger.
-
-        The polling_trigger decorator is designed for view functions,
-        not class methods, and so we use a nested function here to do
-        the actual work. It's a HACK, but it works.
-
-        NB the Django method_decorator doesn't work for some reason.
-
-        """
-
-        @polling_trigger(scope=self.scope)
-        def _get(request: HttpRequest) -> JsonResponse:
-            if not self.scope:
-                raise ValueError("View scope is not set")
-            serializer = self.get_serializer(request)
-            page_size = self.get_page_size(request)
-            qs = self.get_queryset(token=request.auth)
-            data = serialize(qs[:page_size], serializer)
-            return JsonResponse(data, safe=False)
-
-        return _get(request)
+        """Return the serialized data for the trigger."""
+        self.token = request.auth
+        data = self.serialize(self.get_queryset())
+        return JsonResponse(data[: self.get_page_size()], safe=False)
