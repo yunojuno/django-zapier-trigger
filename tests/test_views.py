@@ -6,19 +6,10 @@ from uuid import uuid4
 import pytest
 from django.test import Client, RequestFactory
 from django.urls import reverse
-from django.views import View
 
 from zapier.models import ZapierToken
-from zapier.views import zapier_token_check
 
-from .views import (
-    FirstOrLastNameView,
-    FullNameView,
-    ReverseUsernameView,
-    User,
-    UsernameView,
-    UserView,
-)
+from .views import FirstOrLastNameView, FullNameView, User, UsernameView, UserView
 
 
 @pytest.mark.django_db
@@ -92,27 +83,3 @@ def test_firstorlastnameview(
     data = json.loads(resp.content)
     assert data[0]["id"] == user.id
     assert expected in data[0]
-
-
-@pytest.mark.django_db
-@pytest.mark.parametrize(
-    "view_class,usernames",
-    [
-        (UsernameView, ["B", "A"]),
-        (ReverseUsernameView, ["A", "B"]),
-    ],
-)
-def test_sort_reverse(
-    rf: RequestFactory,
-    zapier_token: ZapierToken,
-    view_class: View,
-    usernames: list[str],
-) -> None:
-    """Confirm the sorting is reverse username."""
-    user1 = User.objects.create(username="A")
-    user2 = User.objects.create(username="B")
-    request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
-    resp = view_class.as_view()(request)
-    assert resp.status_code == 200
-    data = json.loads(resp.content)
-    assert [u["username"] for u in data] == usernames

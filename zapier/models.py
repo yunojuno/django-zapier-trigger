@@ -23,7 +23,6 @@ class ZapierUser(AnonymousUser):
     """Subclass of AnonymousUser used to represent the poller on requests."""
 
 
-
 class ZapierToken(models.Model):
     """Per-user Zapier API token."""
 

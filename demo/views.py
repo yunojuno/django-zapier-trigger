@@ -3,7 +3,6 @@ from django.http import HttpRequest, JsonResponse
 
 from demo.models import Book
 from zapier.decorators import polling_trigger
-from zapier.models import ZapierToken
 from zapier.views import PollingTriggerView
 
 
@@ -16,8 +15,8 @@ class NewBooksById(PollingTriggerView):
 
     scope = "new_books"
 
-    def get_queryset(self, token: ZapierToken) -> QuerySet:
-        if last_obj := token.get_most_recent_object(self.scope):
+    def get_queryset(self) -> QuerySet:
+        if last_obj := self.most_recent_object():
             return Book.objects.filter(id__gt=last_obj["id"]).values()
         return Book.objects.all().values()
 
@@ -26,8 +25,8 @@ class NewBooksByTimestamp(PollingTriggerView):
 
     scope = "new_books"
 
-    def get_queryset(self, token: ZapierToken) -> QuerySet:
-        if last_obj := token.get_most_recent_object(self.scope):
+    def get_queryset(self) -> QuerySet:
+        if last_obj := self.most_recent_object():
             return Book.objects.filter(
                 published_at__gt=last_obj["published_at"]
             ).values()

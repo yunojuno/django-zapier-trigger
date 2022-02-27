@@ -2,6 +2,7 @@
 *.egg-info
 *.bak
 .coverage
+.DS_store
 .tox
 .venv
 dist

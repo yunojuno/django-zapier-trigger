@@ -14,9 +14,7 @@ from typing import Any, Iterable
 
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
-from django.http import HttpRequest
 
-from zapier.models import ZapierToken
 from zapier.views import PollingTriggerView
 
 User = get_user_model()

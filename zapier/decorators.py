@@ -8,18 +8,18 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonRe
 from zapier.auth import authenticate_request
 from zapier.exceptions import TokenAuthError
 from zapier.http import HEADER_COUNT, HEADER_OBJECT_ID, HEADER_SCOPE, HEADER_TOKEN
-from zapier.models import ZapierTokenRequest, ZapierUser
+from zapier.models import ZapierTokenRequest
 
 
 def polling_trigger(scope: str) -> Callable:
     """
     Decorate view functions that require ZapierToken authentication.
 
-    If a scope is passed in (anything other than "*") then the token.api_scopes
-    is checked.
+    If a scope is passed in (anything other than "*") then the
+    token.api_scopes is checked.
 
-    After the inner view function is called the request is logged using the
-    request.auth.log_request method.
+    After the inner view function is called the request is logged using
+    the request.auth.log_request method.
 
     Returns 403 response if the token is invalid.
 
