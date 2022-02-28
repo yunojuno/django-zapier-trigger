@@ -1,17 +1,31 @@
 from __future__ import annotations
 
-from uuid import uuid4
-
 import pytest
 from django.conf import settings
-from django.contrib.auth import get_user_model
 
 from zapier.models import ZapierToken
 
+from .factories import UserFactory
+
 
 @pytest.fixture
-def user() -> settings.AUTH_USER_MODEL:
-    return get_user_model().objects.create(username=str(uuid4()))
+def uf() -> UserFactory:
+    return UserFactory
+
+
+@pytest.fixture
+def user(uf) -> settings.AUTH_USER_MODEL:
+    return uf.create()
+
+
+@pytest.fixture
+def two_users(uf: UserFactory) -> list[settings.AUTH_USER_MODEL]:
+    return uf.create_batch(3)
+
+
+@pytest.fixture
+def three_users(uf: UserFactory) -> list[settings.AUTH_USER_MODEL]:
+    return uf.create_batch(3)
 
 
 @pytest.fixture

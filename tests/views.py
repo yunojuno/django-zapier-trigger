@@ -41,22 +41,14 @@ class UserView(PollingTriggerView):
     scope = "test_scope"
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
-        return User.objects.all()
+        return User.objects.exclude(id=request.auth.user_id).order_by("-id")
 
 
 class UsernameView(UserView):
     """Test view that serializes a subset of fields."""
 
-    sort_key = lambda obj: obj["username"]
-
     def get_queryset(self, request: HttpRequest) -> QuerySet:
-        return User.objects.exclude(id=request.auth.user_id).values("id", "username")
-
-
-class ReverseUsernameView(UsernameView):
-    """Test view that serializes a subset of fields in reverse order."""
-
-    sort_reverse = False
+        return super().get_queryset(request).values("id", "username")
 
 
 class FullNameView(UserView):

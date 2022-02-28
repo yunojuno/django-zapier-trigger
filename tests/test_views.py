@@ -21,7 +21,7 @@ def test_successful_authentication(client: Client, zapier_token: ZapierToken) ->
 
 
 @pytest.mark.django_db
-def test_unsuccessful_authentication(client: Client, zapier_token: ZapierToken) -> None:
+def test_unsuccessful_authentication(client: Client) -> None:
     url = reverse("zapier_token_check")
     resp = client.get(url, HTTP_X_API_TOKEN=str(uuid4()))
     assert resp.status_code == 403, resp
@@ -38,27 +38,37 @@ def test_userview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
 
 
 @pytest.mark.django_db
-def test_usernameview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
-    user1 = User.objects.create(username="A")
+def test_usernameview(
+    rf: RequestFactory, three_users: list[User], zapier_token: ZapierToken
+) -> None:
     request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
     request.auth = zapier_token
     view = UsernameView.as_view()
     resp = view(request)
     assert resp.status_code == 200
     data = json.loads(resp.content)
-    assert data == [{"id": user1.id, "username": user1.username}]
+    assert data == sorted(
+        ({"id": u.id, "username": u.username} for u in three_users),
+        key=lambda u: u["username"],
+        reverse=True,
+    )
 
 
 @pytest.mark.django_db
-def test_firstnameview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
-    user = zapier_token.user
+def test_fullnameview(
+    rf: RequestFactory, three_users: list[User], zapier_token: ZapierToken
+) -> None:
     request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
     request.auth = zapier_token
     view = FullNameView.as_view()
     resp = view(request)
     assert resp.status_code == 200
     data = json.loads(resp.content)
-    assert data == [{"id": user.id, "full_name": user.get_full_name()}]
+    assert data == sorted(
+        ({"id": u.id, "full_name": u.get_full_name()} for u in three_users),
+        key=lambda u: u["id"],
+        reverse=True,
+    )
 
 
 @pytest.mark.django_db
@@ -70,7 +80,11 @@ def test_firstnameview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
     ],
 )
 def test_firstorlastnameview(
-    rf: RequestFactory, zapier_token: ZapierToken, first_name: str, expected: str
+    rf: RequestFactory,
+    three_users: list[User],
+    zapier_token: ZapierToken,
+    first_name: str,
+    expected: str,
 ) -> None:
     user = zapier_token.user
     user.first_name = first_name
@@ -81,5 +95,5 @@ def test_firstorlastnameview(
     resp = view(request)
     assert resp.status_code == 200
     data = json.loads(resp.content)
-    assert data[0]["id"] == user.id
+    assert data[0]["id"] == three_users[-1].id
     assert expected in data[0]

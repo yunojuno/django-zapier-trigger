@@ -10,4 +10,4 @@ class UserFactory(factory.django.DjangoModelFactory):
 
     first_name = factory.Faker("first_name")
     last_name = factory.Faker("last_name")
-    username = factory.Sequence(lambda n: "user_%d" % n)
+    username = factory.Sequence(lambda n: "user_%d" % (n + 1))
