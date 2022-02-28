@@ -96,17 +96,21 @@ class PollingTriggerView(View):
         """Return the next queryset - must be in reverse chrono order."""
         raise NotImplementedError
 
-    def get_data(self, queryset: QuerySet, page_size: int) -> FeedData:
-        """Serialize paged contents of get_queryset."""
-        return self.serialize(queryset[:page_size])
-
     def get_page_size(self) -> int:
         """Override to control page size."""
         return self.page_size
 
     def get_serializer(self) -> FeedSerializer | None:
-        """Override this to control serializer selection."""
+        """Override to control serializer selection."""
         return self.serializer
+
+    def get_data(self, queryset: QuerySet, page_size: int) -> FeedData:
+        """Serialize paged contents of get_queryset."""
+        return self.serialize(queryset[:page_size])
+
+    def get_response(self, data: FeedData) -> JsonResponse:
+        """Override to control response attributes."""
+        return JsonResponse(data, safe=False)
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """
@@ -124,6 +128,6 @@ class PollingTriggerView(View):
             qs = self.get_queryset()
             page_size = self.get_page_size()
             data = self.get_data(qs, page_size)
-            return JsonResponse(data, safe=False)
+            return self.get_response(data)
 
         return _get(request)
