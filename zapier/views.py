@@ -37,19 +37,19 @@ class PollingTriggerView(View):
 
     scope: str = "REPLACE_WITH_REAL_SCOPE"
     page_size = DEFAULT_PAGE_SIZE
-    serializer_class: Any | None = None
+    serializer: Any = None
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.token: ZapierToken | None = None
 
-    def most_recent_object(self) -> dict | None:
+    def get_most_recent_object(self) -> dict | None:
         """Return the last JSON object that was returned for this token/scope."""
         if not self.token:
             raise Exception("Missing view token.")
         return self.token.get_most_recent_object(self.scope)
 
-    def most_recent_object_id(self) -> str | None:
+    def get_most_recent_object_id(self) -> str | None:
         """Return the id of the last JSON object that was returned."""
         if last_obj := self.most_recent_object():
             return last_obj["id"]
@@ -95,7 +95,7 @@ class PollingTriggerView(View):
 
     def get_serializer(self) -> Any:
         """Override this to control serializer selection."""
-        return self.serializer_class
+        return self.serializer
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """

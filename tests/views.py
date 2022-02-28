@@ -61,7 +61,7 @@ class ReverseUsernameView(UsernameView):
 class FullNameView(UserView):
     """Test view that uses a custom serializer."""
 
-    serializer_class = FullNameSerializer
+    serializer = FullNameSerializer
 
 
 class FirstOrLastNameView(UserView):
