@@ -23,14 +23,15 @@ class NewBooksById(PollingTriggerView):
         return None
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
+        qs = Book.objects.order_by("-id").values()
         if obj := self.get_last_obj(request):
-            return Book.objects.filter(id__gt=obj["id"]).values()
-        return Book.objects.all().values()
+            return qs.filter(id__gt=obj["id"])
+        return qs
 
 
 class NewBooksByTimestamp(NewBooksById):
     def get_queryset(self, request: HttpRequest) -> QuerySet:
+        qs = Book.objects.order_by("-id").values()
         if obj := self.get_last_obj(request):
-            qs = Book.objects.filter(published_at__gt=obj["published_at"])
-            return qs.order_by("-published_at").values()
-        return Book.objects.all().values()
+            return qs.filter(published_at__gt=obj["published_at"])
+        return qs

@@ -1,18 +1,18 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 from django.views import debug
 
+import zapier.urls
 from demo.views import NewBooksById, NewBooksByTimestamp
 from demo.views import test as test_view
-from zapier.views import zapier_token_check
 
 admin.autodiscover()
 
 urlpatterns = [
     path("", debug.default_urlconf),
     path("admin/", admin.site.urls),
-    path("zapier/auth-check/", zapier_token_check, name="zapier_token_check"),
-    path("zapier/test/<int:number>/", test_view, name="test"),
-    path("zapier/books/id/", NewBooksById.as_view()),
-    path("zapier/books/timestamp/", NewBooksByTimestamp.as_view()),
+    path("zapier/", include(zapier.urls)),
+    path("demo/test/<int:number>/", test_view, name="test"),
+    path("demo/books/id/", NewBooksById.as_view()),
+    path("demo/books/timestamp/", NewBooksByTimestamp.as_view()),
 ]
