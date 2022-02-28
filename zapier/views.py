@@ -11,7 +11,6 @@ from django.views import View
 from zapier.auth import authenticate_request
 from zapier.decorators import polling_trigger
 from zapier.exceptions import TokenAuthError
-from zapier.models import ZapierToken
 from zapier.settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
@@ -46,39 +45,38 @@ class PollingTriggerView(View):
     page_size = DEFAULT_PAGE_SIZE
     serializer: FeedSerializer | None = None
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
-        super().__init__(*args, **kwargs)
-        self.token: ZapierToken | None = None
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        """Return the next queryset - must be in reverse chrono order."""
+        raise NotImplementedError
 
-    def get_most_recent_object(self) -> FeedObject | None:
-        """Return the last JSON object that was returned for this token/scope."""
-        if not self.token:
-            raise Exception("Missing view token.")
-        return self.token.get_most_recent_object(self.scope)
+    def get_page_size(self, request: HttpRequest) -> int:
+        """Override to control page size."""
+        return self.page_size
 
-    def get_most_recent_object_id(self) -> FeedObjectId | None:
-        """Return the id of the last JSON object that was returned."""
-        if last_obj := self.most_recent_object():
-            return last_obj["id"]
-        return None
+    def get_serializer(self, request: HttpRequest) -> FeedSerializer | None:
+        """Override to control serializer selection."""
+        return self.serializer
 
-    def serialize(self, queryset: QuerySet) -> FeedData:
+    def get_data(
+        self, serializer: FeedSerializer, queryset: QuerySet, page_size: int
+    ) -> FeedData:
         """
         Convert QuerySet into list of object dicts.
 
-        If the serializer_class is set, this method will use it as if it
+        If the serializer is passed in this method will use it as if it
         were a DRF serializer. If you are rolling your own, then make
         sure that it supports the DRF calling pattern:
 
             data = Serializer(queryset, many=True).data
 
-        If the serializer_class is not set it checks whether the
-        queryset has been called with `values`. If so, it can return the
-        list as-is (`values` returns a list of dicts). If not, this
-        method will raise a ValueError.
+        If the serializer is not set it checks whether the queryset has
+        been called with `values`. If so, it can return the list as-is
+        (`values` returns a list of dicts). If not, this method will
+        raise a ValueError.
 
         """
-        if serializer := self.get_serializer():
+        queryset = queryset[:page_size]
+        if serializer:
             return list(serializer(queryset, many=True).data)
 
         # the get_queryset method has already called `values(...)` on the data:
@@ -92,42 +90,20 @@ class PollingTriggerView(View):
             "the queryset returned by `get_queryset`."
         )
 
-    def get_queryset(self) -> QuerySet:
-        """Return the next queryset - must be in reverse chrono order."""
-        raise NotImplementedError
-
-    def get_page_size(self) -> int:
-        """Override to control page size."""
-        return self.page_size
-
-    def get_serializer(self) -> FeedSerializer | None:
-        """Override to control serializer selection."""
-        return self.serializer
-
-    def get_data(self, queryset: QuerySet, page_size: int) -> FeedData:
-        """Serialize paged contents of get_queryset."""
-        return self.serialize(queryset[:page_size])
-
     def get_response(self, data: FeedData) -> JsonResponse:
         """Override to control response attributes."""
         return JsonResponse(data, safe=False)
 
     def get(self, request: HttpRequest) -> JsonResponse:
-        """
-        Return the serialized data for the trigger.
-
-        This method contains a function that is itself decorated - this is a
-        HACK used to get the concrete class scope into the decorator.
-        Using the method_decorator on the outer get method doesn't work.
-
-        """
+        """Return the serialized data for the trigger."""
 
         @polling_trigger(self.scope)
-        def _get(request: HttpRequest) -> None:
-            self.token = request.auth
-            qs = self.get_queryset()
-            page_size = self.get_page_size()
-            data = self.get_data(qs, page_size)
-            return self.get_response(data)
+        def _get(request: HttpRequest) -> JsonResponse:
+            queryset = self.get_queryset(request)
+            serializer = self.get_serializer(request)
+            page_size = self.get_page_size(request)
+            data = self.get_data(serializer, queryset, page_size)
+            resp = self.get_response(data)
+            return resp
 
         return _get(request)

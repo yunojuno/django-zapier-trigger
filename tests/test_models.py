@@ -4,7 +4,7 @@ import pytest
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 
-from zapier.exceptions import JsonResponseError, TokenScopeError
+from zapier.exceptions import JsonResponseError
 from zapier.models import ZapierToken, ZapierTokenRequest
 
 
@@ -39,29 +39,6 @@ class TestZapierToken:
     def test_has_scope__error(self, zapier_token: ZapierToken) -> None:
         with pytest.raises(ValueError):
             zapier_token.has_scope("*")
-
-    @pytest.mark.parametrize(
-        "scopes,scope,error",
-        [
-            (["foo"], "", ValueError),
-            (["foo"], "*", None),
-            (["foo"], "foo", None),
-            (["foo"], "bar", TokenScopeError),
-        ],
-    )
-    def test_check_scope__error(
-        self,
-        zapier_token: ZapierToken,
-        scopes: list[str],
-        scope: str,
-        error: type[Exception] | None,
-    ) -> None:
-        zapier_token.api_scopes = scopes
-        if error:
-            with pytest.raises(error):
-                zapier_token.check_scope(scope)
-        else:
-            zapier_token.check_scope(scope)
 
     @pytest.mark.parametrize(
         "scopes_before,add_scope,scopes_after",

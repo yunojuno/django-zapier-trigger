@@ -14,6 +14,7 @@ from typing import Any, Iterable
 
 from django.contrib.auth import get_user_model
 from django.db.models import QuerySet
+from django.http import HttpRequest
 
 from zapier.views import PollingTriggerView
 
@@ -39,7 +40,7 @@ class UserView(PollingTriggerView):
 
     scope = "test_scope"
 
-    def get_queryset(self) -> QuerySet:
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
         return User.objects.all()
 
 
@@ -48,8 +49,8 @@ class UsernameView(UserView):
 
     sort_key = lambda obj: obj["username"]
 
-    def get_queryset(self) -> QuerySet:
-        return User.objects.exclude(id=self.token.user_id).values("id", "username")
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        return User.objects.exclude(id=request.auth.user_id).values("id", "username")
 
 
 class ReverseUsernameView(UsernameView):
@@ -67,7 +68,7 @@ class FullNameView(UserView):
 class FirstOrLastNameView(UserView):
     """Test view that uses a dynamic serializer."""
 
-    def get_serializer(self) -> Any:
-        if self.token.user.first_name == "Fred":
+    def get_serializer(self, request: HttpRequest) -> Any:
+        if request.auth.user.first_name == "Fred":
             return FirstNameSerializer
         return FullNameSerializer

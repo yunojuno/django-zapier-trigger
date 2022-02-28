@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime
 from uuid import uuid4
 
 from django.conf import settings
@@ -11,12 +10,7 @@ from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.exceptions import JsonResponseError, TokenScopeError
-
-
-def encode_timestamp(timestamp: datetime) -> str:
-    """Truncate microseconds from datetime and JSON encode."""
-    return json.loads(json.dumps(timestamp, cls=DjangoJSONEncoder))
+from zapier.exceptions import JsonResponseError
 
 
 class ZapierUser(AnonymousUser):
@@ -64,16 +58,6 @@ class ZapierToken(models.Model):
         if "*" in self.api_scopes:
             return True
         return scope in self.api_scopes
-
-    def check_scope(self, scope: str) -> None:
-        """Raise TokenScopeError if token does not have the scope requested."""
-        if not scope:
-            raise ValueError("Scope argument is missing or empty.")
-        if scope == "*":
-            return
-        if self.has_scope(scope):
-            return
-        raise TokenScopeError("Token does not have required scope.")
 
     def add_scope(self, scope: str) -> None:
         """Add a new scope to the token.api_scopes."""
