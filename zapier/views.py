@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, TypeAlias
 
 from django.db.models import QuerySet
 from django.db.models.query import ValuesIterable
@@ -13,6 +13,13 @@ from zapier.decorators import polling_trigger
 from zapier.exceptions import TokenAuthError
 from zapier.models import ZapierToken
 from zapier.settings import DEFAULT_PAGE_SIZE
+
+# helpful shared mypy type hints
+FeedObject: TypeAlias = dict
+FeedObjectId: TypeAlias = str | int
+FeedData: TypeAlias = list[FeedObject]
+# Assumed to be a DRF serializer, but could be anything duck-like.
+FeedSerializer: TypeAlias = Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,25 +44,25 @@ class PollingTriggerView(View):
 
     scope: str = "REPLACE_WITH_REAL_SCOPE"
     page_size = DEFAULT_PAGE_SIZE
-    serializer: Any = None
+    serializer: FeedSerializer | None = None
 
     def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.token: ZapierToken | None = None
 
-    def get_most_recent_object(self) -> dict | None:
+    def get_most_recent_object(self) -> FeedObject | None:
         """Return the last JSON object that was returned for this token/scope."""
         if not self.token:
             raise Exception("Missing view token.")
         return self.token.get_most_recent_object(self.scope)
 
-    def get_most_recent_object_id(self) -> str | None:
+    def get_most_recent_object_id(self) -> FeedObjectId | None:
         """Return the id of the last JSON object that was returned."""
         if last_obj := self.most_recent_object():
             return last_obj["id"]
         return None
 
-    def serialize(self, queryset: QuerySet) -> list[dict]:
+    def serialize(self, queryset: QuerySet) -> FeedData:
         """
         Convert QuerySet into list of object dicts.
 
@@ -89,11 +96,15 @@ class PollingTriggerView(View):
         """Return the next queryset - must be in reverse chrono order."""
         raise NotImplementedError
 
+    def get_data(self, queryset: QuerySet, page_size: int) -> FeedData:
+        """Serialize paged contents of get_queryset."""
+        return self.serialize(queryset[:page_size])
+
     def get_page_size(self) -> int:
         """Override to control page size."""
         return self.page_size
 
-    def get_serializer(self) -> Any:
+    def get_serializer(self) -> FeedSerializer | None:
         """Override this to control serializer selection."""
         return self.serializer
 
@@ -110,7 +121,9 @@ class PollingTriggerView(View):
         @polling_trigger(self.scope)
         def _get(request: HttpRequest) -> None:
             self.token = request.auth
-            data = self.serialize(self.get_queryset())
-            return JsonResponse(data[: self.get_page_size()], safe=False)
+            qs = self.get_queryset()
+            page_size = self.get_page_size()
+            data = self.get_data(qs, page_size)
+            return JsonResponse(data, safe=False)
 
         return _get(request)
