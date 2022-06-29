@@ -5,7 +5,7 @@ from typing import Any, TypeAlias
 
 from django.db.models import QuerySet
 from django.db.models.query import ValuesIterable
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import HttpRequest, HttpResponseForbidden, JsonResponse
 from django.views import View
 
 from zapier.auth import authenticate_request
@@ -36,7 +36,7 @@ def zapier_token_check(request: HttpRequest) -> JsonResponse:
     except TokenAuthError:
         logger.exception("Invalid Zapier token authentication request")
         return HttpResponseForbidden()
-    return HttpResponse("OK")
+    return JsonResponse(request.auth.auth_response)
 
 
 class PollingTriggerView(View):

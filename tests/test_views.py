@@ -17,7 +17,7 @@ def test_successful_authentication(client: Client, zapier_token: ZapierToken) ->
     url = reverse("zapier_token_check")
     resp = client.get(url, HTTP_X_API_TOKEN=str(zapier_token.api_token))
     assert resp.status_code == 200, resp.content
-    assert resp.content == b"OK"
+    assert json.loads(resp.content) == zapier_token.auth_response
 
 
 @pytest.mark.django_db

@@ -42,6 +42,15 @@ class ZapierToken(models.Model):
         """Return short version of the api_token - like short commit hash."""
         return str(self.api_token).split("-")[0]
 
+    @property
+    def auth_response(self) -> dict[str, str]:
+        """Return default successful auth response payload."""
+        return {
+            "name": self.user.get_full_name(),
+            "scopes": ",".join(self.api_scopes),
+            "token": self.api_token_short,
+        }
+
     def save(self, *args: object, **kwargs: object) -> None:
         if not self.last_updated_at:
             self.last_updated_at = self.created_at
