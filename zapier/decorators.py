@@ -25,13 +25,15 @@ def log_token_request(
         scope=scope,
         content=response.content,
     )
+    # token check request is logged, but has no data in it.
+    if scope == ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE:
+        return log
     if log.data:
         response.headers[HEADER_COUNT] = log.count
         response.headers[HEADER_OBJECT_ID] = log.data[0]["id"]
     return log
 
 
-@transaction.atomic
 def polling_trigger(scope: str) -> Callable:
     """
     Decorate view functions that require ZapierToken authentication.
@@ -47,6 +49,7 @@ def polling_trigger(scope: str) -> Callable:
 
     def decorator(view_func: Callable) -> Callable:
         @wraps(view_func)
+        @transaction.atomic
         def inner(
             request: HttpRequest, *view_args: object, **view_kwargs: object
         ) -> HttpResponse:

@@ -5,12 +5,11 @@ from typing import Any, TypeAlias
 
 from django.db.models import QuerySet
 from django.db.models.query import ValuesIterable
-from django.http import HttpRequest, HttpResponseForbidden, JsonResponse
+from django.http import HttpRequest, JsonResponse
 from django.views import View
 
-from zapier.auth import authenticate_request
 from zapier.decorators import polling_trigger
-from zapier.exceptions import TokenAuthError
+from zapier.models import ZapierToken
 from zapier.settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
@@ -23,20 +22,19 @@ FeedSerializer: TypeAlias = Any
 logger = logging.getLogger(__name__)
 
 
+@polling_trigger(ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE)
 def zapier_token_check(request: HttpRequest) -> JsonResponse:
     """
     Authenticate Zapier token.
 
-    This view does nothing more than return a 200 - it is used by Zapier
-    itself to authenticate the API token that the user has set.
+    This view returns a JSON response that contains the token
+    user's full name, token short value and a CSV string of
+    all the token scopes. These values can be used to label
+    the connection in Zapier.
 
     """
-    try:
-        authenticate_request(request)
-    except TokenAuthError:
-        logger.exception("Invalid Zapier token authentication request")
-        return HttpResponseForbidden()
-    return JsonResponse(request.auth.auth_response)
+    logger.debug("Successful token check for token: %s", request.auth.api_token_short)
+    return JsonResponse(data=request.auth.auth_response, safe=False)
 
 
 class PollingTriggerView(View):

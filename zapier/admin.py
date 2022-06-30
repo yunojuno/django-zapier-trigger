@@ -105,7 +105,8 @@ class ZapierTokenAdmin(admin.ModelAdmin):
 
 @admin.register(ZapierTokenRequest)
 class ZapierTokenRequestAdmin(admin.ModelAdmin):
-    list_display = ("token", "timestamp", "count")
+    list_display = ("token_value", "token_user", "scope", "timestamp", "count")
+    list_filter = ("scope", "timestamp")
     exclude = ("data",)
     readonly_fields = ("pretty_data",)
 
@@ -117,3 +118,11 @@ class ZapierTokenRequestAdmin(admin.ModelAdmin):
     @admin.display(description="Data (formatted)")
     def pretty_data(self, obj: ZapierTokenRequest) -> str:
         return format_json_for_admin(obj.data)
+
+    @admin.display()
+    def token_value(self, obj: ZapierTokenRequest) -> str:
+        return obj.token.api_token
+
+    @admin.display()
+    def token_user(self, obj: ZapierTokenRequest) -> str:
+        return obj.token.user

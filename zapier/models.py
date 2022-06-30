@@ -20,6 +20,9 @@ class ZapierUser(AnonymousUser):
 class ZapierToken(models.Model):
     """Per-user Zapier API token."""
 
+    # reserved scope for the token check
+    ZAPIER_TOKEN_CHECK_SCOPE = "__zapier_token_check"  # noqa: S105
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="zapier_token"
     )
@@ -65,6 +68,9 @@ class ZapierToken(models.Model):
         if f"-{scope}" in self.api_scopes:
             return False
         if "*" in self.api_scopes:
+            return True
+        # all tokens have this scope by default
+        if scope == self.ZAPIER_TOKEN_CHECK_SCOPE:
             return True
         return scope in self.api_scopes
 
@@ -155,6 +161,11 @@ class ZapierTokenRequest(models.Model):
         ordering = ("timestamp",)
 
     @property
+    def is_token_check(self) -> bool:
+        """Return True if this is a token check, not a data request."""
+        return self.scope == ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE
+
+    @property
     def most_recent_object(self) -> dict | None:
         """
         Return the first object in the list.
@@ -162,7 +173,12 @@ class ZapierTokenRequest(models.Model):
         The data returned to Zapier must be in reverse chronological
         order, so the most recent object is the first in the array.
 
+        If the data logged was a token check then this returns None,
+        as token checks don't return "data" per se.
+
         """
         if not self.data:
+            return None
+        if self.is_token_check:
             return None
         return self.data[0]

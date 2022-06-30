@@ -24,6 +24,7 @@ class TestZapierToken:
             (["*", "foo"], "foo", True),
             (["foo"], "foo", True),
             (["foo", "bar"], "foo", True),
+            (["foo", "bar"], ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE, True),
         ],
     )
     def test_has_scope(
@@ -95,24 +96,36 @@ class TestZapierToken:
         assert zapier_token.api_scopes == scopes
 
     @pytest.mark.parametrize(
-        "content,expected",
+        "scope,content,expected",
         [
-            ([], None),
-            ([{"id": 1}], {"id": 1}),
-            ([{"id": 2}, {"id": 1}], {"id": 2}),
-            ([{"id": "foo"}, {"id": "bar"}], {"id": "foo"}),
+            ("test_scope", [], None),
+            ("test_scope", [{"id": 1}], {"id": 1}),
+            ("test_scope", [{"id": 2}, {"id": 1}], {"id": 2}),
+            ("test_scope", [{"id": "foo"}, {"id": "bar"}], {"id": "foo"}),
+            (
+                ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE,
+                [{"id": "foo"}, {"id": "bar"}],
+                None,
+            ),
         ],
     )
     def test_get_most_recent_object(
-        self, zapier_token: ZapierToken, content: list[dict], expected: dict, **kwargs
+        self,
+        zapier_token: ZapierToken,
+        scope: str,
+        content: list[dict],
+        expected: dict,
+        **kwargs,
     ) -> None:
         assert zapier_token.requests.count() == 0
         assert zapier_token.get_most_recent_object("foo") is None
 
         # first request - starts with a blank
         response = JsonResponse(content, safe=False)
-        ZapierTokenRequest.objects.create(zapier_token, "foo", response.content)
-        assert zapier_token.get_most_recent_object("foo") == expected
+        ZapierTokenRequest.objects.create(
+            token=zapier_token, scope=scope, content=response.content
+        )
+        assert zapier_token.get_most_recent_object(scope) == expected
 
     def test_refresh(self, zapier_token: ZapierToken) -> None:
         """Test refresh method updates the api_token."""
