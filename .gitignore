@@ -10,3 +10,4 @@ htmlcov
 node_modules
 poetry.lock
 test.db
+demo.db

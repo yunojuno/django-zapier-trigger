@@ -26,6 +26,7 @@ packages = [{ include = "zapier" }]
 python = "^3.10"
 django = "^3.2 || ^4.0"
 python-dateutil = "*"
+pytz = "*"
 
 [tool.poetry.dev-dependencies]
 black = {version = "*", allow-prereleases = true}
@@ -52,6 +53,7 @@ pytest-django = "*"
 tox = "*"
 types-freezegun = "*"
 types-python-dateutil = "*"
+types-pytz = "*"
 
 [build-system]
 requires = ["poetry>=0.12"]
