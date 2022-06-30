@@ -53,16 +53,16 @@ def format_json_for_admin(context: dict) -> str:
 class ZapierTokenAdmin(admin.ModelAdmin):
     actions = ("refresh_tokens", "reset_tokens", "revoke_tokens")
     list_display = ("user", "api_token", "api_scopes")
-    search_fields = ("user__first_name", "user__last_name", "user__email", "api_scopes")
     list_select_related = ("user",)
-    readonly_fields = (
-        "api_token",
-        # "request_log",
-        "created_at",
-        "last_updated_at",
-    )
+    readonly_fields = ("api_token", "created_at", "last_updated_at")
     raw_id_fields = ("user",)
+    search_fields = ("user__first_name", "user__last_name", "user__email", "api_scopes")
 
+    @admin.display(
+        description=_lazy(
+            "Refresh selected zapier tokens (reset token uuid, retain logs, scopes)"
+        )
+    )
     def refresh_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
         for token in queryset:
             token.refresh()
@@ -72,23 +72,25 @@ class ZapierTokenAdmin(admin.ModelAdmin):
             messages.SUCCESS,
         )
 
-    refresh_tokens.short_description = _lazy(  # type: ignore
-        "Refresh selected zapier tokens (reset token uuid, retain logs, scopes)"
+    @admin.display(
+        description=_lazy(
+            "Reset selected zapier tokens (reset logs, retain token uuid, scopes)"
+        )
     )
-
     def reset_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
         for token in queryset:
-            token.reset()
+            token.requests.all().delete()
         self.message_user(
             request,
             _("Successfully reset selected zapier tokens"),
             messages.SUCCESS,
         )
 
-    reset_tokens.short_description = _lazy(  # type: ignore
-        "Reset selected zapier tokens (reset logs, retain token uuid, scopes)"
+    @admin.display(
+        description=_lazy(
+            "Revoke selected zapier tokens (remove scopes, retain token uuid, logs)"
+        )
     )
-
     def revoke_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
         for token in queryset:
             token.revoke()
@@ -97,10 +99,6 @@ class ZapierTokenAdmin(admin.ModelAdmin):
             _("Successfully revoked selected zapier tokens"),
             messages.SUCCESS,
         )
-
-    revoke_tokens.short_description = _lazy(  # type: ignore
-        "Revoke selected zapier tokens (remove scopes, retain token uuid, logs)"
-    )
 
 
 @admin.register(ZapierTokenRequest)
