@@ -7,7 +7,7 @@ import pytest
 from django.test import Client, RequestFactory
 from django.urls import reverse
 
-from zapier.models import ZapierToken
+from zapier.models import PollingTriggerRequest, TokenAuthRequest, ZapierToken
 
 from .views import FirstOrLastNameView, FullNameView, User, UsernameView, UserView
 
@@ -97,3 +97,23 @@ def test_firstorlastnameview(
     data = json.loads(resp.content)
     assert data[0]["id"] == three_users[-1].id
     assert expected in data[0]
+
+
+@pytest.mark.django_db
+def test_end_to_end(client, zapier_token: ZapierToken) -> None:
+    url1 = reverse("zapier_token_check")
+    url2 = reverse("username_view")
+    assert TokenAuthRequest.objects.count() == 0
+    assert PollingTriggerRequest.objects.count() == 0
+
+    # token auth check
+    resp = client.get(url1, HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    assert resp.status_code == 200
+    assert TokenAuthRequest.objects.count() == 1
+    assert PollingTriggerRequest.objects.count() == 0
+
+    # initial trigger request
+    resp = client.get(url2, HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    assert resp.status_code == 200
+    assert TokenAuthRequest.objects.count() == 1
+    assert PollingTriggerRequest.objects.count() == 1
