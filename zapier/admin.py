@@ -12,7 +12,7 @@ from django.utils.html import format_html, mark_safe
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.models import ZapierToken, ZapierTokenRequest
+from zapier.models import PollingTriggerRequest, TokenAuthRequest, ZapierToken
 
 logger = logging.getLogger(__name__)
 
@@ -101,26 +101,45 @@ class ZapierTokenAdmin(admin.ModelAdmin):
         )
 
 
-@admin.register(ZapierTokenRequest)
-class ZapierTokenRequestAdmin(admin.ModelAdmin):
+@admin.register(PollingTriggerRequest)
+class PollingTriggerRequestAdmin(admin.ModelAdmin):
     list_display = ("token_value", "token_user", "scope", "timestamp", "count")
     list_filter = ("scope", "timestamp")
     exclude = ("data",)
     readonly_fields = ("pretty_data",)
 
     def has_change_permission(
-        self, request: HttpRequest, obj: ZapierTokenRequest | None = None
+        self, request: HttpRequest, obj: PollingTriggerRequest | None = None
     ) -> bool:
         return False
 
     @admin.display(description="Data (formatted)")
-    def pretty_data(self, obj: ZapierTokenRequest) -> str:
+    def pretty_data(self, obj: PollingTriggerRequest) -> str:
         return format_json_for_admin(obj.data)
 
     @admin.display()
-    def token_value(self, obj: ZapierTokenRequest) -> str:
+    def token_value(self, obj: PollingTriggerRequest) -> str:
         return obj.token.api_token
 
     @admin.display()
-    def token_user(self, obj: ZapierTokenRequest) -> str:
+    def token_user(self, obj: PollingTriggerRequest) -> str:
+        return obj.token.user
+
+
+@admin.register(TokenAuthRequest)
+class TokenAuthAdmin(admin.ModelAdmin):
+    list_display = ("id", "token_value", "token_user", "timestamp")
+    list_filter = ("timestamp",)
+
+    def has_change_permission(
+        self, request: HttpRequest, obj: TokenAuthRequest | None = None
+    ) -> bool:
+        return False
+
+    @admin.display()
+    def token_value(self, obj: TokenAuthRequest) -> str:
+        return obj.token.api_token
+
+    @admin.display()
+    def token_user(self, obj: TokenAuthRequest) -> str:
         return obj.token.user

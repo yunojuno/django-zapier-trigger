@@ -5,7 +5,7 @@ from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 
 from zapier.exceptions import JsonResponseError
-from zapier.models import ZapierToken, ZapierTokenRequest
+from zapier.models import PollingTriggerRequest, ZapierToken
 
 
 @pytest.mark.django_db
@@ -102,11 +102,6 @@ class TestZapierToken:
             ("test_scope", [{"id": 1}], {"id": 1}),
             ("test_scope", [{"id": 2}, {"id": 1}], {"id": 2}),
             ("test_scope", [{"id": "foo"}, {"id": "bar"}], {"id": "foo"}),
-            (
-                ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE,
-                [{"id": "foo"}, {"id": "bar"}],
-                None,
-            ),
         ],
     )
     def test_get_most_recent_object(
@@ -122,7 +117,7 @@ class TestZapierToken:
 
         # first request - starts with a blank
         response = JsonResponse(content, safe=False)
-        ZapierTokenRequest.objects.create(
+        PollingTriggerRequest.objects.create(
             token=zapier_token, scope=scope, content=response.content
         )
         assert zapier_token.get_most_recent_object(scope) == expected
@@ -145,11 +140,11 @@ class TestZapierToken:
         assert zapier_token.api_scopes == []
 
 
-class ZapierTokenRequestModelTests:
+class PollingTriggerRequestModelTests:
     def test_create__unparseable_json(self, zapier_token: ZapierToken) -> None:
         with pytest.raises(JsonResponseError):
             response = HttpResponse("foo")
-            ZapierTokenRequest.objects.create(zapier_token, "foo", response.content)
+            PollingTriggerRequest.objects.create(zapier_token, "foo", response.content)
 
     @pytest.mark.parametrize(
         "content",
@@ -163,4 +158,4 @@ class ZapierTokenRequestModelTests:
         # invalid json
         with pytest.raises(JsonResponseError):
             response = JsonResponse(content, safe=False)
-            ZapierTokenRequest.objects.create(zapier_token, "foo", response)
+            PollingTriggerRequest.objects.create(zapier_token, "foo", response)

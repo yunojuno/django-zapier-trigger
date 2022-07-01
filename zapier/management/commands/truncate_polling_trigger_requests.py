@@ -7,7 +7,7 @@ import pytz
 from django.core.management.base import BaseCommand, CommandParser
 from django.utils.timezone import now as tz_now
 
-from zapier.models import ZapierTokenRequest
+from zapier.models import PollingTriggerRequest
 
 
 class Command(BaseCommand):
@@ -29,7 +29,7 @@ class Command(BaseCommand):
 
     def get_max_timestamp(self, max_count: int) -> datetime:
         """Return the timestamp of the nth item."""
-        timestamps = ZapierTokenRequest.objects.order_by("-timestamp").values_list(
+        timestamps = PollingTriggerRequest.objects.order_by("-timestamp").values_list(
             "timestamp", flat=True
         )[:max_count]
         return timestamps[-1] if timestamps else pytz.utc.localize(datetime.max)
@@ -44,14 +44,11 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         interval = options["interval"]
         max_count = options["max"]
-        self.stdout.write("Truncating ZapierTokenRequest logs:")
+        self.stdout.write("Truncating PollingTriggerRequest logs:")
         self.stdout.write(f" - Interval: {interval} days")
         self.stdout.write(f" - Max:      {max_count} records")
         cut_off = self.get_cut_off(options["interval"], options["max"])
         self.stdout.write(f" - Cut-off:  {cut_off}")
-        self.stdout.write(
-            f"Truncating ZapierTokenRequest objects older than {cut_off}."
-        )
-        logs = ZapierTokenRequest.objects.filter(timestamp__lt=cut_off)
-        self.stdout.write(f"Deleting {logs.count()} records.")
-        logs.delete()
+        qs = PollingTriggerRequest.objects.filter(timestamp__lt=cut_off)
+        deleted, _ = qs.delete()
+        self.stdout.write(f"---\nDeleted {deleted} records.")

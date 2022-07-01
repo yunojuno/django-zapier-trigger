@@ -9,25 +9,22 @@ from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonRe
 from zapier.auth import authenticate_request, authorize_request
 from zapier.exceptions import TokenAuthError
 from zapier.http import HEADER_COUNT, HEADER_OBJECT_ID, HEADER_SCOPE, HEADER_TOKEN
-from zapier.models import ZapierToken, ZapierTokenRequest
+from zapier.models import PollingTriggerRequest, TokenAuthRequest, ZapierToken
 
 
 def log_token_request(
     token: ZapierToken, scope: str, response: HttpResponse
-) -> ZapierTokenRequest:
-    """Create new ZapierTokenRequest object from HttpResponse."""
+) -> PollingTriggerRequest:
+    """Create new PollingTriggerRequest object from HttpResponse."""
     response.headers[HEADER_TOKEN] = token.api_token_short
     response.headers[HEADER_SCOPE] = scope
     response.headers.setdefault(HEADER_COUNT, "0")
     response.headers.setdefault(HEADER_OBJECT_ID, "")
-    log = ZapierTokenRequest.objects.create(
+    log = PollingTriggerRequest.objects.create(
         token=token,
         scope=scope,
         content=response.content,
     )
-    # token check request is logged, but has no data in it.
-    if scope == ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE:
-        return log
     if log.data:
         response.headers[HEADER_COUNT] = log.count
         response.headers[HEADER_OBJECT_ID] = log.data[0]["id"]
@@ -59,6 +56,8 @@ def polling_trigger(scope: str) -> Callable:
                 response: JsonResponse = view_func(request, *view_args, **view_kwargs)
             except TokenAuthError as ex:
                 return HttpResponseForbidden(ex)
+            if scope == ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE:
+                TokenAuthRequest.objects.create(token=request.auth)
             else:
                 log_token_request(request.auth, scope, response)
             return response

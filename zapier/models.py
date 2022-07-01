@@ -38,7 +38,7 @@ class ZapierToken(models.Model):
     last_updated_at = models.DateTimeField()
 
     def __str__(self) -> str:
-        return f"Zapier API token for {self.user}"
+        return f"Zapier API token [{self.api_token_short}]"
 
     @property
     def api_token_short(self) -> str:
@@ -119,10 +119,10 @@ class ZapierToken(models.Model):
         return None
 
 
-class ZapierTokenRequestManager(models.Manager):
+class PollingTriggerRequestManager(models.Manager):
     def create(
         self, token: ZapierToken, scope: str, content: str | bytes
-    ) -> ZapierTokenRequest:
+    ) -> PollingTriggerRequest:
         try:
             data = json.loads(content)
         except json.decoder.JSONDecodeError as ex:
@@ -135,8 +135,8 @@ class ZapierTokenRequestManager(models.Manager):
         )
 
 
-class ZapierTokenRequest(models.Model):
-    """Log of each request received."""
+class PollingTriggerRequest(models.Model):
+    """Record polling trigger requests."""
 
     token = models.ForeignKey(
         ZapierToken, on_delete=models.CASCADE, related_name="requests"
@@ -154,16 +154,10 @@ class ZapierTokenRequest(models.Model):
         help_text=_lazy("Denormalised object count, used for filtering"),
     )
 
-    objects: ZapierTokenRequestManager = ZapierTokenRequestManager()
+    objects: PollingTriggerRequestManager = PollingTriggerRequestManager()
 
     class Meta:
         get_latest_by = "timestamp"
-        ordering = ("timestamp",)
-
-    @property
-    def is_token_check(self) -> bool:
-        """Return True if this is a token check, not a data request."""
-        return self.scope == ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE
 
     @property
     def most_recent_object(self) -> dict | None:
@@ -179,6 +173,18 @@ class ZapierTokenRequest(models.Model):
         """
         if not self.data:
             return None
-        if self.is_token_check:
-            return None
         return self.data[0]
+
+
+class TokenAuthRequest(models.Model):
+    """Record auth requests."""
+
+    token = models.ForeignKey(
+        ZapierToken,
+        on_delete=models.CASCADE,
+        related_name="auth_requests",
+    )
+    timestamp = models.DateTimeField(default=tz_now)
+
+    class Meta:
+        get_latest_by = "timestamp"
