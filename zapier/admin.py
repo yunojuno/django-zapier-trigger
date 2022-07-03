@@ -49,9 +49,46 @@ def format_json_for_admin(context: dict) -> str:
     return format_html("<code>{}</code>", mark_safe(pretty))
 
 
+class PollingTriggerRequestInline(admin.TabularInline):
+    max_num = 0
+    model = PollingTriggerRequest
+    exclude = ("data",)
+    readonly_fields = ("timestamp", "scope", "count")
+    verbose_name_plural = "Most recent polling trigger requests"
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        ids = PollingTriggerRequest.objects.all().values_list("id", flat=True)[:5]
+        return PollingTriggerRequest.objects.filter(id__in=ids).order_by("-id")
+
+    def has_delete_permission(
+        self, request: HttpRequest, obj: PollingTriggerRequest
+    ) -> bool:
+        return False
+
+
+class TokenAuthRequestInline(admin.TabularInline):
+    max_num = 0
+    model = TokenAuthRequest
+    readonly_fields = ["timestamp"]
+    verbose_name_plural = "Most recent token auth requests"
+
+    def get_queryset(self, request: HttpRequest) -> QuerySet:
+        ids = TokenAuthRequest.objects.all().values_list("id", flat=True)[:5]
+        return TokenAuthRequest.objects.filter(id__in=ids).order_by("-id")
+
+    def has_delete_permission(
+        self, request: HttpRequest, obj: TokenAuthRequest
+    ) -> bool:
+        return False
+
+
 @admin.register(ZapierToken)
 class ZapierTokenAdmin(admin.ModelAdmin):
     actions = ("refresh_tokens", "reset_tokens", "revoke_tokens")
+    inlines = (
+        TokenAuthRequestInline,
+        PollingTriggerRequestInline,
+    )
     list_display = ("user", "api_token", "api_scopes")
     list_select_related = ("user",)
     readonly_fields = ("api_token", "created_at", "last_updated_at")
