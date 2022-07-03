@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-zapier-triggers"
-version = "0.4.beta1"
+version = "1.0.alpha1"
 description = "Simple Django app for managing Zapier triggers."
 license = "MIT"
 authors = ["YunoJuno <code@yunojuno.com>"]
@@ -10,11 +10,12 @@ homepage = "https://github.com/yunojuno/django-zapier-trigger"
 repository = "https://github.com/yunojuno/django-zapier-trigger"
 documentation = "https://github.com/yunojuno/pdjango-zapier-trigger"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
     "Framework :: Django",
     "Framework :: Django :: 3.2",
     "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.1",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
@@ -27,16 +28,14 @@ python = "^3.10"
 django = "^3.2 || ^4.0"
 python-dateutil = "*"
 pytz = "*"
+requests = "*"
 
 [tool.poetry.dev-dependencies]
-black = {version = "*", allow-prereleases = true}
+black = "*"
 coverage = "*"
 dj-database-url = "*"
 factory-boy = "*"
 flake8 = "*"
-# pinned because of a flake8-bandit issue with 1.7.3
-# https://github.com/tylerwince/flake8-bandit/issues/21
-bandit = "1.7.2"
 flake8-bandit = "*"
 flake8-blind-except = "*"
 flake8-docstrings = "*"
@@ -46,7 +45,6 @@ freezegun = "*"
 isort = "*"
 mypy = "*"
 pre-commit = "*"
-psycopg2-binary = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-django = "*"

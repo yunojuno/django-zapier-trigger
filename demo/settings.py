@@ -13,7 +13,9 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "zapier",
+    "zapier.contrib.authtoken",
+    "zapier.triggers.hooks",
+    "zapier.triggers.polling",
     "demo",
 )
 
@@ -24,6 +26,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "demo.middleware.JsonRequestDumpMiddleware",
 ]
 
 PROJECT_DIR = path.abspath(path.join(path.dirname(__file__)))
@@ -70,5 +73,15 @@ LOGGING = {
 
 ROOT_URLCONF = "demo.urls"
 
+ALLOWED_HOSTS = (
+    "localhost",
+    "127.0.0.1",
+    ".ngrok.io",
+)
+
 if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
+
+# ===============
+ZAPIER_TRIGGER_VIEW_FUNC_MAP = {"new_books": "demo.views.new_books"}
+ZAPIER_POLLING_REQUEST_LOG = "ALL"

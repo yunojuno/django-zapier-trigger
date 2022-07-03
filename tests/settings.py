@@ -4,7 +4,7 @@ DEBUG = True
 TEMPLATE_DEBUG = True
 USE_TZ = True
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "demo.db"}}
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": "test.db"}}
 
 INSTALLED_APPS = (
     "django.contrib.admin",
@@ -13,7 +13,9 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "zapier",
+    "zapier.contrib.authtoken",
+    "zapier.triggers.hooks",
+    "zapier.triggers.polling",
 )
 
 MIDDLEWARE = [
