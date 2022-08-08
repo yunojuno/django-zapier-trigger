@@ -13,6 +13,7 @@ from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
 
 from zapier.models import PollingTriggerRequest, TokenAuthRequest, ZapierToken
+from zapier.models.hooks import RestHookSubscription
 
 logger = logging.getLogger(__name__)
 
@@ -180,3 +181,8 @@ class TokenAuthAdmin(admin.ModelAdmin):
     @admin.display()
     def token_user(self, obj: TokenAuthRequest) -> str:
         return obj.token.user
+
+
+@admin.register(RestHookSubscription)
+class RestHookSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("token", "scope", "subscribed_at", "is_active")

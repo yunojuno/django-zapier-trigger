@@ -70,5 +70,11 @@ LOGGING = {
 
 ROOT_URLCONF = "demo.urls"
 
+ALLOWED_HOSTS = (
+    "localhost",
+    "127.0.0.1",
+    ".ngrok.io",
+)
+
 if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
