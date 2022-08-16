@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+from datetime import timedelta
 from uuid import uuid4
 
 from django.conf import settings
+from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
@@ -59,6 +61,9 @@ class RestHookSubscription(models.Model):
 
     objects = RestHookSubscriptionQuerySet.as_manager()
 
+    def __str__(self) -> str:
+        return f"Subscription #{self.id} ('{self.scope}')"
+
     @property
     def is_active(self) -> bool:
         """Return True if the subscription is active."""
@@ -82,3 +87,33 @@ class RestHookSubscription(models.Model):
     def unsubscribe(self) -> None:
         self.unsubscribed_at = tz_now()
         self.save(update_fields=["unsubscribed_at"])
+
+
+class RestHookEvent(models.Model):
+    """Record each webhook POST."""
+
+    subscription = models.ForeignKey(
+        RestHookSubscription,
+        on_delete=models.CASCADE,
+        help_text=_lazy("The subscription to which the event was posted."),
+    )
+    started_at = models.DateTimeField(default=tz_now, blank=True, null=True)
+    finished_at = models.DateTimeField(blank=True, null=True)
+    request_payload = models.JSONField(blank=True, null=True, encoder=DjangoJSONEncoder)
+    response_payload = models.JSONField(
+        blank=True, null=True, encoder=DjangoJSONEncoder
+    )
+    status_code = models.IntegerField()
+
+    def __str__(self) -> str:
+        return f"'{self.subscription.scope}' event #{self.id}"
+
+    @property
+    def is_complete(self) -> bool:
+        return self.started_at and self.finished_at
+
+    @property
+    def duration(self) -> timedelta | None:
+        if not self.is_complete:
+            return None
+        return self.finished_at - self.started_at

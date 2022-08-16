@@ -27,6 +27,7 @@ python = "^3.10"
 django = "^3.2 || ^4.0"
 python-dateutil = "*"
 pytz = "*"
+requests = "*"
 
 [tool.poetry.dev-dependencies]
 black = {version = "*", allow-prereleases = true}

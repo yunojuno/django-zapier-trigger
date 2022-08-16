@@ -1,5 +1,6 @@
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse
+from django.views.decorators import csrf
 
 from demo.models import Book
 from zapier.decorators import polling_trigger
@@ -35,3 +36,8 @@ class NewBooksByTimestamp(NewBooksById):
         if obj := self.get_last_obj(request):
             return qs.filter(published_at__gt=obj["published_at"])
         return qs
+
+
+@csrf.csrf_exempt
+def receive_webhook(request: HttpRequest) -> JsonResponse:
+    return JsonResponse({"result": "ok"})

@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import json
 from uuid import UUID
 
 from django.http import HttpRequest, JsonResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
 from django.views.decorators import csrf
 
 from zapier.auth import authenticate_request
@@ -33,3 +35,25 @@ def unsubscribe(request: HttpRequest, subscription_id: UUID) -> JsonResponse:
     subscription = get_object_or_404(RestHookSubscription, uuid=subscription_id)
     subscription.unsubscribe()
     return JsonResponse({"id": subscription_id}, status=204)
+
+
+@csrf.csrf_exempt
+def perform_list(request: HttpRequest, subscription_id: UUID) -> JsonResponse:
+    """
+    Return sample data (sourced from static template).
+
+    This endpoint is used by Zapier to retrieve a sample item for the
+    user to use to configure their trigger.
+
+    The data is read from the /templates/zapier directory, and must be
+    named {scope}.json.
+
+    """
+    authenticate_request(request)
+    subscription = get_object_or_404(RestHookSubscription, uuid=subscription_id)
+    return render(
+        request,
+        f"zapier/{subscription.scope}.json",
+        status=200,
+        content_type="application/json",
+    )
