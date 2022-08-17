@@ -191,7 +191,11 @@ class RestHookEventInline(admin.TabularInline):
     verbose_name_plural = "Most recent webhook events"
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
-        ids = RestHookEvent.objects.all().values_list("id", flat=True)[:5]
+        # We cannot use a slice in the return QS as the admin app tries to
+        # apply its own filters and you can't filter a sliced queryset.
+        # To get around this we extract the ids of the most recent objects
+        # and then filter on those - in effect getting the last X objects.
+        ids = RestHookEvent.objects.order_by("-id").values_list("id", flat=True)[:10]
         return RestHookEvent.objects.filter(id__in=ids).order_by("-id")
 
     def has_delete_permission(self, request: HttpRequest, obj: RestHookEvent) -> bool:
