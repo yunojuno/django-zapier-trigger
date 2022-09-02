@@ -8,23 +8,33 @@ const performSubscribe = async (z, bundle) => {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
-            Accept: "application/json",
-            "X-API-TOKEN": bundle.authData.api_key
+            "Accept": "application/json",
+            "Authorization": "Bearer {{bundle.authData.api_key}}"
         },
-        params: {},
         body: {
             hookUrl: bundle.targetUrl,
-            hookScope: "approved_timesheet"
+            hookScope: "new_book"
         }
     };
-
     return z.request(options).then((response) => {
         response.throwForStatus();
-        const results = response.json;
+        return response.json;
+    });
+};
 
-        // You can do any parsing you need for results here before returning them
-
-        return results;
+const performUnsubscribe = async (z, bundle) => {
+    const options = {
+        url: "{{process.env.BASE_API_URL}}/zapier/hooks/unsubscribe/",
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "Authorization": "Bearer {{bundle.authData.api_key}}"
+        }
+    };
+    return z.request(options).then((response) => {
+        response.throwForStatus();
+        return response.json;
     });
 };
 
@@ -33,16 +43,7 @@ module.exports = {
         perform: perform,
         type: "hook",
         performSubscribe: performSubscribe,
-        performUnsubscribe: {
-            body: { hookUrl: "{{bundle.targetUrl}}" },
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "application/json",
-                "X-API-TOKEN": "{{bundle.authData.api_key}}"
-            },
-            method: "DELETE",
-            url: "{{process.env.BASE_API_URL}}/zapier/hooks/unsubscribe/{{bundle.subscribeData.id}}"
-        },
+        performUnsubscribe: performUnsubscribe,
         sample: {
             id: "123456",
             authorName: "Arthur Conan Doyle",
@@ -53,7 +54,7 @@ module.exports = {
     key: "new_book",
     noun: "Book",
     display: {
-        label: "Ne Book",
+        label: "New Book",
         description: "Triggers when a book is published.",
         hidden: false,
         important: false

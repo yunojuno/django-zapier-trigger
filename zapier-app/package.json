@@ -1,6 +1,6 @@
 {
   "name": "test-rest-hook",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Testing the rest webhook export format",
   "main": "index.js",
   "scripts": {

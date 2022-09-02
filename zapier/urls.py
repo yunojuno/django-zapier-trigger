@@ -9,7 +9,7 @@ from .views.hooks import perform_list
 app_name = "zapier"
 
 urlpatterns = [
-    path("token-check/", zapier_token_check, name="zapier_token_check"),
+    path("auth/", zapier_token_check, name="zapier_token_check"),
     path("hooks/subscribe/", subscribe, name="rest_hook_subscribe"),
     path(
         "hooks/unsubscribe/<uuid:subscription_id>/",

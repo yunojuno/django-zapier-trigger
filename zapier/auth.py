@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from django.http import HttpRequest
 
 from zapier.exceptions import (
@@ -10,6 +12,15 @@ from zapier.exceptions import (
     UnknownToken,
 )
 from zapier.models import ZapierToken, ZapierUser
+
+logger = logging.getLogger(__name__)
+
+
+def extract_token(request: HttpRequest) -> str:
+    """Return token from 'Authorization: Bearer {{token}}' request header."""
+    if scheme_token := request.headers.get("Authorization", ""):
+        return scheme_token.split(" ", 1)[1]
+    return ""
 
 
 def authenticate_request(request: HttpRequest) -> None:
@@ -22,8 +33,8 @@ def authenticate_request(request: HttpRequest) -> None:
     Raises TokenAuthenticationError if the token is invalid / missing.
 
     """
-    if not (token := request.headers.get("x-api-token", "")):
-        raise MissingTokenHeader("Missing X-Api-Token header.")
+    if not (token := extract_token(request)):
+        raise MissingTokenHeader("Missing Authorization request header.")
     try:
         obj: ZapierToken = ZapierToken.objects.get(api_token=token)
     except ZapierToken.DoesNotExist:
