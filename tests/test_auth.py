@@ -20,7 +20,7 @@ class TestAuthenticateRequest:
     def test_authenticate_request(
         self, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         authenticate_request(request)
         assert request.auth == zapier_token
         assert request.user.is_anonymous
@@ -29,19 +29,19 @@ class TestAuthenticateRequest:
         request = rf.get("/")
         with pytest.raises(MissingTokenHeader):
             authenticate_request(request)
-        request = rf.get("/", HTTP_X_API_TOKEN="")
+        request = rf.get("/", HTTP_AUTHORIZATION="")
         with pytest.raises(MissingTokenHeader):
             authenticate_request(request)
 
     def test_authenticate_unknown_token(self, rf: RequestFactory) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(uuid4()))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {uuid4()}")
         with pytest.raises(UnknownToken):
             authenticate_request(request)
 
     def test_authenticate_inactive_user_error(
         self, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         zapier_token.user.is_active = False
         zapier_token.user.save()
         with pytest.raises(TokenUserError):
@@ -50,7 +50,7 @@ class TestAuthenticateRequest:
     def test_authenticate_token_user_error(
         self, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.user = get_user_model().objects.create(username=str(uuid4()))
         with pytest.raises(TokenUserError):
             authenticate_request(request)
@@ -73,7 +73,7 @@ class TestAuthorizeRequest:
         scope: str,
     ) -> None:
         zapier_token.set_scopes(scopes)
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = zapier_token
         authorize_request(request, scope)
 
@@ -94,7 +94,7 @@ class TestAuthorizeRequest:
         error: type[Exception] | None,
     ) -> None:
         zapier_token.set_scopes(scopes)
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = zapier_token
         with pytest.raises(error):
             authorize_request(request, scope)
@@ -102,14 +102,14 @@ class TestAuthorizeRequest:
     def test_authorize_request__no_token(
         self, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         with pytest.raises(TokenAuthError):
             authorize_request(request, scope="foo")
 
     def test_authorize_request__invalid_auth(
         self, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = ZapierUser()
         with pytest.raises(TokenAuthError):
             authorize_request(request, scope="foo")

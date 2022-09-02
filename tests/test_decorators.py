@@ -17,7 +17,7 @@ class TestZapierTrigger:
     def test_decorator(
         self, scope: str, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = zapier_token
 
         @polling_trigger(scope)
@@ -38,7 +38,7 @@ class TestZapierTrigger:
     def test_scope_mismatch(
         self, rf: RequestFactory, zapier_token: ZapierToken
     ) -> None:
-        request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = zapier_token
         zapier_token.set_scopes(["bar"])
 

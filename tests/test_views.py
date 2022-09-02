@@ -15,7 +15,7 @@ from .views import FirstOrLastNameView, FullNameView, User, UsernameView, UserVi
 @pytest.mark.django_db
 def test_successful_authentication(client: Client, zapier_token: ZapierToken) -> None:
     url = reverse("zapier_token_check")
-    resp = client.get(url, HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    resp = client.get(url, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     assert resp.status_code == 200, resp.content
     assert json.loads(resp.content) == zapier_token.auth_response
 
@@ -30,7 +30,7 @@ def test_unsuccessful_authentication(client: Client) -> None:
 @pytest.mark.django_db
 def test_userview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
     """View that does not explicitly select values list."""
-    request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
     view = UserView.as_view()
     with pytest.raises(ValueError):
@@ -41,7 +41,7 @@ def test_userview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
 def test_usernameview(
     rf: RequestFactory, three_users: list[User], zapier_token: ZapierToken
 ) -> None:
-    request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
     view = UsernameView.as_view()
     resp = view(request)
@@ -58,7 +58,7 @@ def test_usernameview(
 def test_fullnameview(
     rf: RequestFactory, three_users: list[User], zapier_token: ZapierToken
 ) -> None:
-    request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
     view = FullNameView.as_view()
     resp = view(request)
@@ -89,7 +89,7 @@ def test_firstorlastnameview(
     user = zapier_token.user
     user.first_name = first_name
     user.save()
-    request = rf.get("/", HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
     view = FirstOrLastNameView.as_view()
     resp = view(request)
@@ -107,13 +107,13 @@ def test_end_to_end(client, zapier_token: ZapierToken) -> None:
     assert PollingTriggerRequest.objects.count() == 0
 
     # token auth check
-    resp = client.get(url1, HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    resp = client.get(url1, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     assert resp.status_code == 200
     assert TokenAuthRequest.objects.count() == 1
     assert PollingTriggerRequest.objects.count() == 0
 
     # initial trigger request
-    resp = client.get(url2, HTTP_X_API_TOKEN=str(zapier_token.api_token))
+    resp = client.get(url2, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     assert resp.status_code == 200
     assert TokenAuthRequest.objects.count() == 1
     assert PollingTriggerRequest.objects.count() == 1
