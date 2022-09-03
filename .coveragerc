@@ -1,2 +1,2 @@
 [run]
-omit = zapier/migrations/*,zapier/urls.py,zapier/__init__.py,tests/*
+omit = zapier/*/migrations/*,tests/*

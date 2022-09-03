@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 from django.conf import settings
 
-from zapier.models import AuthToken
+from zapier.authtoken.models import AuthToken
 
 from .factories import UserFactory
 

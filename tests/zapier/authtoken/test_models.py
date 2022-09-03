@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import pytest
 from django.conf import settings
-from django.http import HttpResponse, JsonResponse
 
-from zapier.exceptions import JsonResponseError
-from zapier.models import AuthToken, PollingTriggerRequest
+from zapier.authtoken.models import AuthToken
 
 
 @pytest.mark.django_db
@@ -94,68 +92,3 @@ class TestAuthToken:
         assert zapier_token.api_scopes == scopes
         zapier_token.refresh_from_db()
         assert zapier_token.api_scopes == scopes
-
-    @pytest.mark.parametrize(
-        "scope,content,expected",
-        [
-            ("test_scope", [], None),
-            ("test_scope", [{"id": 1}], {"id": 1}),
-            ("test_scope", [{"id": 2}, {"id": 1}], {"id": 2}),
-            ("test_scope", [{"id": "foo"}, {"id": "bar"}], {"id": "foo"}),
-        ],
-    )
-    def test_get_most_recent_object(
-        self,
-        zapier_token: AuthToken,
-        scope: str,
-        content: list[dict],
-        expected: dict,
-        **kwargs,
-    ) -> None:
-        assert zapier_token.requests.count() == 0
-        assert zapier_token.get_most_recent_object("foo") is None
-
-        # first request - starts with a blank
-        response = JsonResponse(content, safe=False)
-        PollingTriggerRequest.objects.create(
-            token=zapier_token, scope=scope, content=response.content
-        )
-        assert zapier_token.get_most_recent_object(scope) == expected
-
-    def test_refresh(self, zapier_token: AuthToken) -> None:
-        """Test refresh method updates the api_token."""
-        old_token = zapier_token.api_token
-        zapier_token.refresh()
-        assert zapier_token.api_token != old_token
-        zapier_token.refresh_from_db()
-        assert zapier_token.api_token != old_token
-
-    def test_revoke(self, zapier_token: AuthToken) -> None:
-        """Test revoke method removes all scopes."""
-        old_scopes = zapier_token.api_scopes
-        assert old_scopes
-        zapier_token.revoke()
-        assert zapier_token.api_scopes == []
-        zapier_token.refresh_from_db()
-        assert zapier_token.api_scopes == []
-
-
-class PollingTriggerRequestModelTests:
-    def test_create__unparseable_json(self, zapier_token: AuthToken) -> None:
-        with pytest.raises(JsonResponseError):
-            response = HttpResponse("foo")
-            PollingTriggerRequest.objects.create(zapier_token, "foo", response.content)
-
-    @pytest.mark.parametrize(
-        "content",
-        [
-            "ok",
-            {"id": 0},
-            {"id": "foo"},
-        ],
-    )
-    def test_create__invalid_json(self, content, zapier_token: AuthToken) -> None:
-        # invalid json
-        with pytest.raises(JsonResponseError):
-            response = JsonResponse(content, safe=False)
-            PollingTriggerRequest.objects.create(zapier_token, "foo", response)

@@ -4,15 +4,15 @@ import pytest
 from django.contrib.auth import get_user_model
 from django.test import RequestFactory
 
-from zapier.auth import authenticate_request, authorize_request
-from zapier.exceptions import (
+from zapier.authtoken.exceptions import (
     MissingTokenHeader,
     TokenAuthError,
     TokenScopeError,
     TokenUserError,
     UnknownToken,
 )
-from zapier.models import AuthToken, ZapierUser
+from zapier.authtoken.models import AuthToken, ZapierUser
+from zapier.authtoken.views import authenticate_request, authorize_request
 
 
 @pytest.mark.django_db
