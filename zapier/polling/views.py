@@ -8,9 +8,8 @@ from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, JsonResponse
 from django.views import View
 
-from zapier.decorators import polling_trigger
-from zapier.models import ZapierToken
-from zapier.settings import DEFAULT_PAGE_SIZE
+# from zapier.polling.decorators import polling_trigger
+from zapier.polling.settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
 FeedObject: TypeAlias = dict
@@ -20,21 +19,6 @@ FeedData: TypeAlias = list[FeedObject]
 FeedSerializer: TypeAlias = Any
 
 logger = logging.getLogger(__name__)
-
-
-@polling_trigger(ZapierToken.ZAPIER_TOKEN_CHECK_SCOPE)
-def zapier_token_check(request: HttpRequest) -> JsonResponse:
-    """
-    Authenticate Zapier token.
-
-    This view returns a JSON response that contains the token
-    user's full name, token short value and a CSV string of
-    all the token scopes. These values can be used to label
-    the connection in Zapier.
-
-    """
-    logger.debug("Successful token check for token: %s", request.auth.api_token_short)
-    return JsonResponse(data=request.auth.auth_response, safe=False)
 
 
 class PollingTriggerView(View):
@@ -94,8 +78,7 @@ class PollingTriggerView(View):
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """Return the serialized data for the trigger."""
-
-        @polling_trigger(self.scope)
+        # @polling_trigger(self.scope)
         def _get(request: HttpRequest) -> JsonResponse:
             queryset = self.get_queryset(request)
             serializer = self.get_serializer(request)

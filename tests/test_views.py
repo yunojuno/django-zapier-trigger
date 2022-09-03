@@ -7,13 +7,13 @@ import pytest
 from django.test import Client, RequestFactory
 from django.urls import reverse
 
-from zapier.models import PollingTriggerRequest, TokenAuthRequest, ZapierToken
+from zapier.models import AuthToken, PollingTriggerRequest, TokenAuthRequest
 
 from .views import FirstOrLastNameView, FullNameView, User, UsernameView, UserView
 
 
 @pytest.mark.django_db
-def test_successful_authentication(client: Client, zapier_token: ZapierToken) -> None:
+def test_successful_authentication(client: Client, zapier_token: AuthToken) -> None:
     url = reverse("zapier_token_check")
     resp = client.get(url, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     assert resp.status_code == 200, resp.content
@@ -28,7 +28,7 @@ def test_unsuccessful_authentication(client: Client) -> None:
 
 
 @pytest.mark.django_db
-def test_userview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
+def test_userview(rf: RequestFactory, zapier_token: AuthToken) -> None:
     """View that does not explicitly select values list."""
     request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
@@ -39,7 +39,7 @@ def test_userview(rf: RequestFactory, zapier_token: ZapierToken) -> None:
 
 @pytest.mark.django_db
 def test_usernameview(
-    rf: RequestFactory, three_users: list[User], zapier_token: ZapierToken
+    rf: RequestFactory, three_users: list[User], zapier_token: AuthToken
 ) -> None:
     request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
@@ -56,7 +56,7 @@ def test_usernameview(
 
 @pytest.mark.django_db
 def test_fullnameview(
-    rf: RequestFactory, three_users: list[User], zapier_token: ZapierToken
+    rf: RequestFactory, three_users: list[User], zapier_token: AuthToken
 ) -> None:
     request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
     request.auth = zapier_token
@@ -82,7 +82,7 @@ def test_fullnameview(
 def test_firstorlastnameview(
     rf: RequestFactory,
     three_users: list[User],
-    zapier_token: ZapierToken,
+    zapier_token: AuthToken,
     first_name: str,
     expected: str,
 ) -> None:
@@ -100,7 +100,7 @@ def test_firstorlastnameview(
 
 
 @pytest.mark.django_db
-def test_end_to_end(client, zapier_token: ZapierToken) -> None:
+def test_end_to_end(client, zapier_token: AuthToken) -> None:
     url1 = reverse("zapier_token_check")
     url2 = reverse("username_view")
     assert TokenAuthRequest.objects.count() == 0

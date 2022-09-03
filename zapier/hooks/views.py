@@ -7,8 +7,8 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators import csrf
 
-from zapier.auth import authenticate_request
-from zapier.models.hooks import RestHookSubscription
+from zapier.authtoken.views import authenticate_request
+from zapier.hooks.models import RestHookSubscription
 
 
 @csrf.csrf_exempt
@@ -22,14 +22,12 @@ def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
     if subscription := RestHookSubscription.objects.filter(
         scope=hook,
         user=request.auth.user,
-        token=request.auth,
     ).last():
         subscription.resubscribe(data["hookUrl"])
     else:
         subscription = RestHookSubscription.objects.create(
             scope=hook,
             user=request.auth.user,
-            token=request.auth,
             target_url=data["hookUrl"],
         )
     # response JSON is stored in `bundle.subscribeData`

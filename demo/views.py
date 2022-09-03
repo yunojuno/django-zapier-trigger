@@ -3,12 +3,10 @@ from django.http import HttpRequest, JsonResponse
 from django.views.decorators import csrf
 
 from demo.models import Book
-from zapier.decorators import polling_trigger
-from zapier.models import ZapierToken
-from zapier.views import PollingTriggerView
+from zapier.authtoken.models import AuthToken
+from zapier.polling.views import PollingTriggerView
 
 
-@polling_trigger("test_trigger")
 def test(request: HttpRequest, number: int) -> JsonResponse:
     return JsonResponse([{"id": i} for i in reversed(range(number))], safe=False)
 
@@ -18,7 +16,7 @@ class NewBooksById(PollingTriggerView):
     scope = "new_books"
 
     def get_last_obj(self, request: HttpRequest) -> dict | None:
-        token: ZapierToken = request.auth
+        token: AuthToken = request.auth
         if log := token.requests.exclude(count=0).last():
             return log.most_recent_object
         return None

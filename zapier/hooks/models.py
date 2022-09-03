@@ -9,8 +9,6 @@ from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from .tokens import ZapierToken
-
 
 class RestHookSubscriptionQuerySet(models.QuerySet):
     def active(self) -> RestHookSubscriptionQuerySet:
@@ -33,12 +31,6 @@ class RestHookSubscription(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         related_name="rest_hooks",
-        on_delete=models.CASCADE,
-    )
-    token = models.ForeignKey(
-        ZapierToken,
-        related_name="webhooks",
-        help_text=_lazy("The ZapierToken against which to store the webhook."),
         on_delete=models.CASCADE,
     )
     scope = models.CharField(
@@ -78,7 +70,7 @@ class RestHookSubscription(models.Model):
         """Serialize object as a JSON-serializable dict."""
         return {
             "uuid": self.uuid,
-            "api_token": self.token.api_token,
+            "user_id": self.user.pk,
             "scope": self.scope,
             "url": self.target_url,
             "active": self.is_active,

@@ -8,14 +8,14 @@ from freezegun import freeze_time
 
 from zapier import http as http_headers
 from zapier.decorators import polling_trigger
-from zapier.models import ZapierToken
+from zapier.models import AuthToken
 
 
 @pytest.mark.django_db
 class TestZapierTrigger:
     @pytest.mark.parametrize("scope", ["foo"])
     def test_decorator(
-        self, scope: str, rf: RequestFactory, zapier_token: ZapierToken
+        self, scope: str, rf: RequestFactory, zapier_token: AuthToken
     ) -> None:
         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = zapier_token
@@ -35,9 +35,7 @@ class TestZapierTrigger:
         assert resp.headers[http_headers.HEADER_COUNT] == "2"
         assert resp.headers[http_headers.HEADER_OBJECT_ID] == "ObjA"
 
-    def test_scope_mismatch(
-        self, rf: RequestFactory, zapier_token: ZapierToken
-    ) -> None:
+    def test_scope_mismatch(self, rf: RequestFactory, zapier_token: AuthToken) -> None:
         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
         request.auth = zapier_token
         zapier_token.set_scopes(["bar"])
