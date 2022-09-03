@@ -7,7 +7,7 @@ repos:
 
   # python code formatting - will amend files
   - repo: https://github.com/ambv/black
-    rev: 22.6.0
+    rev: 22.8.0
     hooks:
       - id: black
 
@@ -17,8 +17,8 @@ repos:
       - id: pyupgrade
 
   # Flake8 includes pyflakes, pycodestyle, mccabe, pydocstyle, bandit
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+  - repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
     hooks:
       - id: flake8
         additional_dependencies:

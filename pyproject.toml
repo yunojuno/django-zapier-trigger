@@ -30,14 +30,11 @@ pytz = "*"
 requests = "*"
 
 [tool.poetry.dev-dependencies]
-black = {version = "*", allow-prereleases = true}
+black = "*"
 coverage = "*"
 dj-database-url = "*"
 factory-boy = "*"
 flake8 = "*"
-# pinned because of a flake8-bandit issue with 1.7.3
-# https://github.com/tylerwince/flake8-bandit/issues/21
-bandit = "1.7.2"
 flake8-bandit = "*"
 flake8-blind-except = "*"
 flake8-docstrings = "*"
@@ -47,7 +44,6 @@ freezegun = "*"
 isort = "*"
 mypy = "*"
 pre-commit = "*"
-psycopg2-binary = "*"
 pytest = "*"
 pytest-cov = "*"
 pytest-django = "*"
