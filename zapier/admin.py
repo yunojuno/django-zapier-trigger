@@ -205,7 +205,15 @@ class RestHookEventInline(admin.TabularInline):
 @admin.register(RestHookSubscription)
 class RestHookSubscriptionAdmin(admin.ModelAdmin):
     list_display = ("token", "scope", "subscribed_at", "is_active")
-    readonly_fields = ("user", "token", "uuid", "subscribed_at", "unsubscribed_at")
+    readonly_fields = (
+        "user",
+        "token",
+        "scope",
+        "target_url",
+        "subscribed_at",
+        "unsubscribed_at",
+        "uuid",
+    )
     inlines = (RestHookEventInline,)
 
 

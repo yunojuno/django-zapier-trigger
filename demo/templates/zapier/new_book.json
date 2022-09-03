@@ -1,6 +1,20 @@
-{
-    "id": 5,
-    "title": "Hot Water",
-    "author": "PG Wodehouse",
-    "published_at": "2022-02-24T17:48:04Z"
-}
+[
+    {
+        "id": 5,
+        "title": "Hot Water",
+        "author": "PG Wodehouse",
+        "published_at": "2022-02-24T17:48:04Z"
+    },
+    {
+        "id": 1,
+        "title": "Great Expectations",
+        "author": "Charles Dickens",
+        "published_at": "2022-02-24T17:47:04Z"
+    },
+    {
+        "id": 2,
+        "title": "Moby Dick",
+        "author": "Herman Melville",
+        "published_at": "2022-02-24T17:47:31Z"
+    }
+]

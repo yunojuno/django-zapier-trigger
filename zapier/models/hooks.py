@@ -85,8 +85,15 @@ class RestHookSubscription(models.Model):
         }
 
     def unsubscribe(self) -> None:
+        self.target_url = ""
         self.unsubscribed_at = tz_now()
         self.save(update_fields=["unsubscribed_at"])
+
+    def resubscribe(self, target_url: str) -> None:
+        self.target_url = target_url
+        self.subscribed_at = tz_now()
+        self.unsubscribed_at = None
+        self.save(update_fields=["target_url", "subscribed_at", "unsubscribed_at"])
 
 
 class RestHookEvent(models.Model):

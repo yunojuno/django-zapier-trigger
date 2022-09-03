@@ -16,7 +16,7 @@ from zapier.models import ZapierToken, ZapierUser
 logger = logging.getLogger(__name__)
 
 
-def extract_token(request: HttpRequest) -> str:
+def extract_bearer_token(request: HttpRequest) -> str:
     """Return token from 'Authorization: Bearer {{token}}' request header."""
     if scheme_token := request.headers.get("Authorization", ""):
         return scheme_token.split(" ", 1)[1]
@@ -33,7 +33,7 @@ def authenticate_request(request: HttpRequest) -> None:
     Raises TokenAuthenticationError if the token is invalid / missing.
 
     """
-    if not (token := extract_token(request)):
+    if not (token := extract_bearer_token(request)):
         raise MissingTokenHeader("Missing Authorization request header.")
     try:
         obj: ZapierToken = ZapierToken.objects.get(api_token=token)

@@ -1,4 +1,4 @@
-from .hooks import perform_list, subscribe, unsubscribe
+from .hooks import list, subscribe, unsubscribe
 from .triggers import PollingTriggerView, zapier_token_check
 
 __all__ = [
@@ -6,5 +6,5 @@ __all__ = [
     "zapier_token_check",
     "subscribe",
     "unsubscribe",
-    "perform_list",
+    "list",
 ]
