@@ -8,6 +8,7 @@ from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, JsonResponse
 from django.views import View
 
+from zapier.authtoken.views import authenticate_request
 from zapier.triggers.polling.settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
@@ -77,13 +78,10 @@ class PollingTriggerView(View):
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """Return the serialized data for the trigger."""
-        # @polling_trigger(self.scope)
-        def _get(request: HttpRequest) -> JsonResponse:
-            queryset = self.get_queryset(request)
-            serializer = self.get_serializer(request)
-            page_size = self.get_page_size(request)
-            data = self.get_data(serializer, queryset, page_size)
-            resp = self.get_response(data)
-            return resp
-
-        return _get(request)
+        authenticate_request(request)
+        queryset = self.get_queryset(request)
+        serializer = self.get_serializer(request)
+        page_size = self.get_page_size(request)
+        data = self.get_data(serializer, queryset, page_size)
+        resp = self.get_response(data)
+        return resp

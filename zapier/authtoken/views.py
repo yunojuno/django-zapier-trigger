@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 
 from django.contrib.auth import get_user_model
-from django.http import HttpRequest, JsonResponse
+from django.http import HttpRequest, HttpResponseForbidden, JsonResponse
 
 from .exceptions import (
     MissingTokenHeader,
@@ -12,7 +12,7 @@ from .exceptions import (
     TokenUserError,
     UnknownToken,
 )
-from .models import AuthToken, ZapierUser
+from .models import AuthToken, TokenAuthRequest, ZapierUser
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -74,6 +74,10 @@ def auth_check(request: HttpRequest) -> JsonResponse:
     the connection in Zapier.
 
     """
-    authenticate_request(request)
+    try:
+        authenticate_request(request)
+    except TokenAuthError as ex:
+        return HttpResponseForbidden(ex)
+    TokenAuthRequest.objects.create(token=request.auth)
     logger.debug("Successful token check for token: %s", request.auth.api_token_short)
     return JsonResponse(data=request.auth.auth_response, safe=False)

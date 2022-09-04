@@ -21,5 +21,5 @@ def test_successful_authentication(client: Client, zapier_token: AuthToken) -> N
 @pytest.mark.django_db
 def test_unsuccessful_authentication(client: Client) -> None:
     url = reverse("zapier_token_check")
-    resp = client.get(url, HTTP_X_API_TOKEN=str(uuid4()))
+    resp = client.get(url, HTTP_AUTHORIZATION=f"Bearer {uuid4()}")
     assert resp.status_code == 403, resp
