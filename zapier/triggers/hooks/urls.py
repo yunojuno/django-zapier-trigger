@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from django.urls import path
 
-from zapier.hooks.views import list, subscribe, unsubscribe
+from .views import list, subscribe, unsubscribe
 
-app_name = "zapier.hooks"
+app_name = "zapier_hooks"
 
 urlpatterns = [
     path("<str:hook>/subscribe/", subscribe, name="subscribe"),

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from tests.zapier.polling.views import (
+from tests.zapier.triggers.polling.views import (
     FirstOrLastNameView,
     FullNameView,
     UsernameView,

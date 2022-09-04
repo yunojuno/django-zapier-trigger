@@ -9,7 +9,7 @@ from django.db.models import QuerySet
 from django.http import HttpRequest
 from django.utils.html import format_html, mark_safe
 
-from zapier.polling.models import PollingTriggerRequest
+from zapier.triggers.polling.models import PollingTriggerRequest
 
 logger = logging.getLogger(__name__)
 

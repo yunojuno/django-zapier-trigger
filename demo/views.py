@@ -4,7 +4,7 @@ from django.views.decorators import csrf
 
 from demo.models import Book
 from zapier.authtoken.models import AuthToken
-from zapier.polling.views import PollingTriggerView
+from zapier.triggers.polling.views import PollingTriggerView
 
 
 def test(request: HttpRequest, number: int) -> JsonResponse:

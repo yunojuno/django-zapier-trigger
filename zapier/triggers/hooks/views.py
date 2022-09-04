@@ -8,7 +8,7 @@ from django.shortcuts import get_object_or_404, render
 from django.views.decorators import csrf
 
 from zapier.authtoken.views import authenticate_request
-from zapier.hooks.models import RestHookSubscription
+from zapier.triggers.hooks.models import RestHookSubscription
 
 
 @csrf.csrf_exempt

@@ -5,7 +5,7 @@ from django.http import HttpResponse, JsonResponse
 
 from zapier.authtoken.exceptions import JsonResponseError
 from zapier.authtoken.models import AuthToken
-from zapier.polling.models import PollingTriggerRequest
+from zapier.triggers.polling.models import PollingTriggerRequest
 
 
 class PollingTriggerRequestModelTests:

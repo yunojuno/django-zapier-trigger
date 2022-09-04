@@ -8,8 +8,7 @@ from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, JsonResponse
 from django.views import View
 
-# from zapier.polling.decorators import polling_trigger
-from zapier.polling.settings import DEFAULT_PAGE_SIZE
+from zapier.triggers.polling.settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
 FeedObject: TypeAlias = dict
