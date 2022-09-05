@@ -2,25 +2,26 @@ from __future__ import annotations
 
 import json
 
+from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.authtoken.exceptions import JsonResponseError
 from zapier.authtoken.models import AuthToken
+from zapier.exceptions import JsonResponseError
 
 
 class PollingTriggerRequestManager(models.Manager):
     def create(
-        self, token: AuthToken, scope: str, content: str | bytes
+        self, user: settings.AUTH_USER_MODEL, scope: str, content: str | bytes
     ) -> PollingTriggerRequest:
         try:
             data = json.loads(content)
         except json.decoder.JSONDecodeError as ex:
             raise JsonResponseError("Invalid JSON") from ex
         return super().create(
-            token=token,
+            user=user,
             scope=scope,
             data=data,
             count=len(data) if data else 0,
@@ -30,8 +31,10 @@ class PollingTriggerRequestManager(models.Manager):
 class PollingTriggerRequest(models.Model):
     """Record polling trigger requests."""
 
-    token = models.ForeignKey(
-        AuthToken, on_delete=models.CASCADE, related_name="requests"
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="zapier_trigger_requests"
     )
     scope = models.CharField(max_length=50)
     timestamp = models.DateTimeField(default=tz_now)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import timedelta
 from uuid import uuid4
 
+import requests
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
@@ -11,9 +12,12 @@ from django.utils.translation import gettext_lazy as _lazy
 
 
 class RestHookSubscriptionQuerySet(models.QuerySet):
-    def active(self) -> RestHookSubscriptionQuerySet:
+    def active(self, scope: str | None = None) -> RestHookSubscriptionQuerySet:
         """Filter active subscriptions."""
-        return self.filter(subscribed_at__isnull=False, unsubscribed_at__isnull=True)
+        qs = self.filter(subscribed_at__isnull=False, unsubscribed_at__isnull=True)
+        if scope:
+            qs.filter(scope=scope)
+        return qs
 
 
 class RestHookSubscription(models.Model):
@@ -86,6 +90,20 @@ class RestHookSubscription(models.Model):
         self.subscribed_at = tz_now()
         self.unsubscribed_at = None
         self.save(update_fields=["target_url", "subscribed_at", "unsubscribed_at"])
+
+    def push(self, event_data: dict) -> RestHookEvent:
+        """Push data to Zapier."""
+        event = RestHookEvent(
+            subscription=self,
+            started_at = tz_now(),
+            request_payload=event_data,
+        )
+        response = requests.post(self.target_url, json=event_data)
+        event.response_payload = response.json()
+        event.finished_at = tz_now()
+        event.status_code = response.status_code
+        event.save()
+        return event
 
 
 class RestHookEvent(models.Model):

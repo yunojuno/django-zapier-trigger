@@ -17,7 +17,6 @@ def authenticate() -> Callable:
 
     def decorator(view_func: Callable) -> Callable:
         @wraps(view_func)
-        @transaction.atomic
         def inner(
             request: HttpRequest, *view_args: object, **view_kwargs: object
         ) -> HttpResponse:

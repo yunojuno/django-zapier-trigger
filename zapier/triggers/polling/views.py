@@ -9,7 +9,8 @@ from django.http import HttpRequest, JsonResponse
 from django.views import View
 
 from zapier.authtoken.views import authenticate_request
-from zapier.triggers.polling.settings import DEFAULT_PAGE_SIZE
+
+from .settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
 FeedObject: TypeAlias = dict

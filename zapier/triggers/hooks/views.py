@@ -12,10 +12,11 @@ from zapier.triggers.hooks.models import RestHookSubscription
 
 
 @csrf.csrf_exempt
+@authenticate_request
 def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
     """Create a new REST Hook subscription."""
-    authenticate_request(request)
     data = json.loads(request.body)
+    hook_url = data["hookUrl"]
     # when a zap is disabled the subscription is unsubscribed - in this
     # instance we have an inactive subscription, so we update the target
     # url (it will be different) and reset the timestamps.
@@ -23,18 +24,19 @@ def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
         scope=hook,
         user=request.auth.user,
     ).last():
-        subscription.resubscribe(data["hookUrl"])
+        subscription.resubscribe(hook_url)
     else:
         subscription = RestHookSubscription.objects.create(
             scope=hook,
             user=request.auth.user,
-            target_url=data["hookUrl"],
+            target_url=hook_url,
         )
     # response JSON is stored in `bundle.subscribeData`
     return JsonResponse({"id": str(subscription.uuid), "scope": hook}, status=201)
 
 
 @csrf.csrf_exempt
+@authenticate_request
 def unsubscribe(request: HttpRequest, hook: str, subscription_id: UUID) -> JsonResponse:
     """Delete a RestHookSubscription."""
     authenticate_request(request)
@@ -44,6 +46,7 @@ def unsubscribe(request: HttpRequest, hook: str, subscription_id: UUID) -> JsonR
 
 
 @csrf.csrf_exempt
+@authenticate_request
 def list(request: HttpRequest, hook: str) -> JsonResponse:
     """
     Return sample data (sourced from static template).
@@ -52,13 +55,7 @@ def list(request: HttpRequest, hook: str) -> JsonResponse:
     user to use to configure their trigger.
 
     The data is read from the /templates/zapier directory, and must be
-    named {scope}.json.
+    named {hook}.json.
 
     """
-    authenticate_request(request)
-    return render(
-        request,
-        f"zapier/{hook}.json",
-        status=200,
-        content_type="application/json",
-    )
+    return render(request, f"zapier/{hook}.json", content_type="application/json")

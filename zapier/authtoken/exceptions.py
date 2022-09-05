@@ -26,9 +26,3 @@ class TokenScopeError(TokenAuthError):
     """Token does not have the valid scope."""
 
     pass
-
-
-class JsonResponseError(Exception):
-    """Response does not contain valid JSON."""
-
-    pass
