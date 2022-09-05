@@ -14,8 +14,8 @@ INSTALLED_APPS = (
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "zapier.authtoken",
-    "zapier.triggers.hooks",
-    "zapier.triggers.polling",
+    # "zapier.triggers.hooks",
+    # "zapier.triggers.polling",
     "demo",
 )
 

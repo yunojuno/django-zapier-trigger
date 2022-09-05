@@ -7,12 +7,12 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators import csrf
 
-from zapier.authtoken.views import authenticate_request
+from zapier.authtoken.decorators import authenticate_zapier_view
 from zapier.triggers.hooks.models import RestHookSubscription
 
 
 @csrf.csrf_exempt
-@authenticate_request
+@authenticate_zapier_view
 def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
     """Create a new REST Hook subscription."""
     data = json.loads(request.body)
@@ -36,17 +36,16 @@ def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
 
 
 @csrf.csrf_exempt
-@authenticate_request
+@authenticate_zapier_view
 def unsubscribe(request: HttpRequest, hook: str, subscription_id: UUID) -> JsonResponse:
     """Delete a RestHookSubscription."""
-    authenticate_request(request)
     subscription = get_object_or_404(RestHookSubscription, uuid=subscription_id)
     subscription.unsubscribe()
     return JsonResponse({"id": subscription_id}, status=204)
 
 
 @csrf.csrf_exempt
-@authenticate_request
+@authenticate_zapier_view
 def list(request: HttpRequest, hook: str) -> JsonResponse:
     """
     Return sample data (sourced from static template).

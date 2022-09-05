@@ -48,7 +48,7 @@ class PollingTriggerRequestAdmin(admin.ModelAdmin):
 
     @admin.display()
     def token_value(self, obj: PollingTriggerRequest) -> str:
-        return obj.token.api_token
+        return obj.token.api_key
 
     @admin.display()
     def token_user(self, obj: PollingTriggerRequest) -> str:

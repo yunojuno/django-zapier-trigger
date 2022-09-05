@@ -30,4 +30,4 @@ def three_users(uf: UserFactory) -> list[settings.AUTH_USER_MODEL]:
 
 @pytest.fixture
 def zapier_token(user: settings.AUTH_USER_MODEL) -> AuthToken:
-    return AuthToken.objects.create(user=user, api_scopes=["*"])
+    return AuthToken.objects.create(user=user)

@@ -33,11 +33,11 @@ class TokenAuthRequestInline(admin.TabularInline):
 class AuthTokenAdmin(admin.ModelAdmin):
     actions = ("refresh_tokens", "reset_tokens", "revoke_tokens")
     inlines = (TokenAuthRequestInline,)
-    list_display = ("user", "api_token", "api_scopes")
+    list_display = ("user", "api_key")
     list_select_related = ("user",)
-    readonly_fields = ("api_token", "created_at", "last_updated_at")
+    readonly_fields = ("api_key", "created_at", "refreshed_at", "revoked_at")
     raw_id_fields = ("user",)
-    search_fields = ("user__first_name", "user__last_name", "user__email", "api_scopes")
+    search_fields = ("user__first_name", "user__last_name", "user__email")
 
     @admin.display(
         description=_lazy(
@@ -94,7 +94,7 @@ class TokenAuthAdmin(admin.ModelAdmin):
 
     @admin.display()
     def token_value(self, obj: TokenAuthRequest) -> str:
-        return obj.token.api_token
+        return obj.token.api_key
 
     @admin.display()
     def token_user(self, obj: TokenAuthRequest) -> str:

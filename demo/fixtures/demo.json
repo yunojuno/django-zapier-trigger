@@ -40,7 +40,7 @@
     "pk": 1,
     "fields": {
         "user": 2,
-        "api_token": "606a8f63-ecbf-4a55-a727-9bd3a9ec1451",
+        "api_key": "606a8f63-ecbf-4a55-a727-9bd3a9ec1451",
         "api_scopes": [
             "*"
         ],

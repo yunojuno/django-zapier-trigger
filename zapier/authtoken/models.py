@@ -4,104 +4,87 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from django.db import models
+from django.db import models, transaction
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
+from zapier.authtoken.exceptions import TokenAuthError
+
 
 class ZapierUser(AnonymousUser):
-    """Subclass of AnonymousUser used to represent the poller on requests."""
-
+    """Subclass of anonymous user to identify Zapier requests."""
 
 class AuthToken(models.Model):
     """Per-user Zapier API token."""
 
-    # reserved scope for the token check
-    ZAPIER_TOKEN_CHECK_SCOPE = "__zapier_token_check"  # noqa: S105
-
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="zapier_token"
     )
-    api_token = models.UUIDField(
-        default=uuid4, help_text=_lazy("API token for use in Zapier integration")
+    api_key = models.UUIDField(
+        default=uuid4, help_text=_lazy("API key for use in Zapier integration")
     )
-    api_scopes = models.JSONField(
-        default=list,
-        help_text=_lazy("List of strings used to define access permissions."),
+    created_at = models.DateTimeField(
+        default=tz_now, help_text=_lazy("When the token was created.")
+    )
+    refreshed_at = models.DateTimeField(
+        default=None,
         blank=True,
+        null=True,
+        help_text=_lazy("When the token was last refreshed."),
     )
-    created_at = models.DateTimeField(default=tz_now)
-    last_updated_at = models.DateTimeField()
+    revoked_at = models.DateTimeField(
+        default=None,
+        blank=True,
+        null=True,
+        help_text=_lazy("When the token was last revoked."),
+    )
+    is_active = models.BooleanField(
+        default=True, help_text=_lazy("True if the token can be used.")
+    )
 
     def __str__(self) -> str:
-        return f"Zapier API token [{self.api_token_short}]"
+        return f"Zapier API key [{self.api_key_short}]"
 
     @property
-    def api_token_short(self) -> str:
-        """Return short version of the api_token - like short commit hash."""
-        return str(self.api_token).split("-")[0]
+    def api_key_short(self) -> str:
+        """Return short version of the api_key - like short commit hash."""
+        return str(self.api_key).split("-")[0]
 
     @property
     def auth_response(self) -> dict[str, str]:
         """Return default successful auth response payload."""
         return {
-            "name": self.user.get_full_name(),
-            "scopes": ",".join(self.api_scopes),
-            "token": self.api_token_short,
+            "full_name": self.user.get_full_name(),
+            "token": self.api_key_short,
         }
 
-    def save(self, *args: object, **kwargs: object) -> None:
-        if not self.last_updated_at:
-            self.last_updated_at = self.created_at
-        else:
-            self.last_updated_at = tz_now()
-        super().save(*args, **kwargs)
-
-    def has_scope(self, scope: str) -> bool:
-        # negative scope means excluded.
-        if scope == "*":
-            raise ValueError("scope argument cannot be '*'")
-        if f"-{scope}" in self.api_scopes:
-            return False
-        if "*" in self.api_scopes:
-            return True
-        # all tokens have this scope by default
-        if scope == self.ZAPIER_TOKEN_CHECK_SCOPE:
-            return True
-        return scope in self.api_scopes
-
-    def add_scope(self, scope: str) -> None:
-        """Add a new scope to the token.api_scopes."""
-        self.add_scopes([scope])
-
-    def add_scopes(self, scopes: list[str]) -> None:
-        """Add new scopes to the token.api_scopes."""
-        self.api_scopes = list(set(self.api_scopes + scopes))
-        self.save(update_fields=["api_scopes"])
-
-    def remove_scope(self, scope: str) -> None:
-        """Remove a scope to the token.api_scopes."""
-        self.remove_scopes([scope])
-
-    def remove_scopes(self, scopes: list[str]) -> None:
-        """Remove scopes to the token.api_scopes."""
-        self.api_scopes = [s for s in self.api_scopes if s and s not in scopes]
-        self.save(update_fields={"api_scopes"})
-
-    def set_scopes(self, scopes: list[str]) -> None:
-        """Set api_scopes and save object."""
-        self.api_scopes = scopes
-        self.save(update_fields=["api_scopes"])
-
     def refresh(self) -> None:
-        """Update the api_token."""
-        self.api_token = uuid4()
-        self.save(update_fields=["api_token"])
+        """Update the api_key."""
+        if not self.is_active:
+            raise TokenAuthError("Inactive AuthTokens cannot be refreshed.")
+        self.api_key = uuid4()
+        self.refreshed_at = tz_now()
+        self.revoked_at = None
+        self.save(update_fields=["api_key", "refreshed_at", "revoked_at"])
 
     def revoke(self) -> None:
-        """Remove all scopes - renders token obsolete."""
-        self.api_scopes = []
-        self.save(update_fields=["api_scopes"])
+        if not self.is_active:
+            raise TokenAuthError("Inactive AuthTokens cannot be revoked.")
+        self.api_key = None
+        self.is_active = False
+        self.refreshed_at = None
+        self.revoked_at = tz_now()
+        self.save(update_fields=["api_key", "refreshed_at", "revoked_at", "is_active"])
+
+    @transaction.atomic
+    def reset(self) -> None:
+        """Refresh the token and delete all previous auth requests."""
+        self.api_key = uuid4()
+        self.is_active = True
+        self.refreshed_at = tz_now()
+        self.revoked_at = None
+        self.save(update_fields=["api_key", "refreshed_at", "revoked_at", "is_active"])
+        self.auth_requests.all().delete()
 
     def get_most_recent_object(self, scope: str) -> dict | None:
         """Return the most recent object logged."""

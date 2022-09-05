@@ -16,7 +16,7 @@ from .views import FirstOrLastNameView, FullNameView, User, UsernameView
 def test_usernameview(
     rf: RequestFactory, three_users: list[User], zapier_token: AuthToken
 ) -> None:
-    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     request.auth = zapier_token
     view = UsernameView.as_view()
     resp = view(request)
@@ -33,7 +33,7 @@ def test_usernameview(
 def test_fullnameview(
     rf: RequestFactory, three_users: list[User], zapier_token: AuthToken
 ) -> None:
-    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     request.auth = zapier_token
     view = FullNameView.as_view()
     resp = view(request)
@@ -64,7 +64,7 @@ def test_firstorlastnameview(
     user = zapier_token.user
     user.first_name = first_name
     user.save()
-    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     request.auth = zapier_token
     view = FirstOrLastNameView.as_view()
     resp = view(request)
@@ -82,13 +82,13 @@ def test_end_to_end(client, zapier_token: AuthToken) -> None:
     assert PollingTriggerRequest.objects.count() == 0
 
     # token auth check
-    resp = client.get(url1, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
+    resp = client.get(url1, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     assert resp.status_code == 200
     assert TokenAuthRequest.objects.count() == 1
     assert PollingTriggerRequest.objects.count() == 0
 
     # initial trigger request
-    resp = client.get(url2, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_token}")
+    resp = client.get(url2, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     assert resp.status_code == 200
     assert TokenAuthRequest.objects.count() == 1
     assert PollingTriggerRequest.objects.count() == 1
