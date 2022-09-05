@@ -39,9 +39,6 @@ class AuthToken(models.Model):
         null=True,
         help_text=_lazy("When the token was last revoked."),
     )
-    is_active = models.BooleanField(
-        default=True, help_text=_lazy("True if the token can be used.")
-    )
 
     def __str__(self) -> str:
         return f"Zapier API key [{self.api_key_short}]"
@@ -64,11 +61,9 @@ class AuthToken(models.Model):
             "apiKey": str(self.api_key),
         }
 
-    def save(self, *args: object, **kwargs: object) -> None:
-        self.is_active = not self.revoked_at
-        if "update_fields" in kwargs:
-            kwargs["update_fields"].append("is_active")  # type: ignore
-        super().save(*args, **kwargs)
+    @property
+    def is_active(self) -> bool:
+        return not self.revoked_at
 
     def refresh(self) -> None:
         """Update the api_key."""
@@ -82,17 +77,12 @@ class AuthToken(models.Model):
     def revoke(self) -> None:
         if not self.is_active:
             raise TokenAuthError("Inactive AuthTokens cannot be revoked.")
-        self.api_key = None
-        self.is_active = False
-        self.refreshed_at = None
         self.revoked_at = tz_now()
-        self.save(update_fields=["api_key", "refreshed_at", "revoked_at", "is_active"])
+        self.save(update_fields=["api_key", "refreshed_at", "revoked_at"])
 
-    @transaction.atomic
     def reset(self) -> None:
         """Refresh the token and delete all previous auth requests."""
         self.api_key = uuid4()
-        self.is_active = True
         self.refreshed_at = tz_now()
         self.revoked_at = None
-        self.save(update_fields=["api_key", "refreshed_at", "revoked_at", "is_active"])
+        self.save(update_fields=["api_key", "refreshed_at", "revoked_at"])

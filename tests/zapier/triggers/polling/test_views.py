@@ -14,10 +14,10 @@ from .views import FirstOrLastNameView, FullNameView, User, UsernameView
 
 @pytest.mark.django_db
 def test_usernameview(
-    rf: RequestFactory, three_users: list[User], zapier_token: AuthToken
+    rf: RequestFactory, three_users: list[User], active_token: AuthToken
 ) -> None:
-    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
-    request.auth = zapier_token
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
+    request.auth = active_token
     view = UsernameView.as_view()
     resp = view(request)
     assert resp.status_code == 200
@@ -31,10 +31,10 @@ def test_usernameview(
 
 @pytest.mark.django_db
 def test_fullnameview(
-    rf: RequestFactory, three_users: list[User], zapier_token: AuthToken
+    rf: RequestFactory, three_users: list[User], active_token: AuthToken
 ) -> None:
-    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
-    request.auth = zapier_token
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
+    request.auth = active_token
     view = FullNameView.as_view()
     resp = view(request)
     assert resp.status_code == 200
@@ -57,15 +57,15 @@ def test_fullnameview(
 def test_firstorlastnameview(
     rf: RequestFactory,
     three_users: list[User],
-    zapier_token: AuthToken,
+    active_token: AuthToken,
     first_name: str,
     expected: str,
 ) -> None:
-    user = zapier_token.user
+    user = active_token.user
     user.first_name = first_name
     user.save()
-    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
-    request.auth = zapier_token
+    request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
+    request.auth = active_token
     view = FirstOrLastNameView.as_view()
     resp = view(request)
     assert resp.status_code == 200
@@ -75,17 +75,17 @@ def test_firstorlastnameview(
 
 
 @pytest.mark.django_db
-def test_end_to_end(client, zapier_token: AuthToken) -> None:
+def test_end_to_end(client, active_token: AuthToken) -> None:
     url1 = reverse("zapier:auth_check")
     url2 = reverse("username_view")
     assert PollingTriggerRequest.objects.count() == 0
 
     # token auth check
-    resp = client.get(url1, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
+    resp = client.get(url1, HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
     assert resp.status_code == 200
     assert PollingTriggerRequest.objects.count() == 0
 
     # initial trigger request
-    resp = client.get(url2, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
+    resp = client.get(url2, HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
     assert resp.status_code == 200
     assert PollingTriggerRequest.objects.count() == 1

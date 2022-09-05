@@ -9,10 +9,10 @@ from zapier.triggers.polling.models import PollingTriggerRequest
 
 
 class PollingTriggerRequestModelTests:
-    def test_create__unparseable_json(self, zapier_token: AuthToken) -> None:
+    def test_create__unparseable_json(self, active_token: AuthToken) -> None:
         with pytest.raises(JsonResponseError):
             response = HttpResponse("foo")
-            PollingTriggerRequest.objects.create(zapier_token, "foo", response.content)
+            PollingTriggerRequest.objects.create(active_token, "foo", response.content)
 
     @pytest.mark.parametrize(
         "content",
@@ -22,8 +22,8 @@ class PollingTriggerRequestModelTests:
             {"id": "foo"},
         ],
     )
-    def test_create__invalid_json(self, content, zapier_token: AuthToken) -> None:
+    def test_create__invalid_json(self, content, active_token: AuthToken) -> None:
         # invalid json
         with pytest.raises(JsonResponseError):
             response = JsonResponse(content, safe=False)
-            PollingTriggerRequest.objects.create(zapier_token, "foo", response)
+            PollingTriggerRequest.objects.create(active_token, "foo", response)

@@ -16,12 +16,12 @@ from zapier.contrib.authtoken.models import AuthToken
 @pytest.mark.django_db
 class TestAuthenticateRequest:
     def test_authenticate_request(
-        self, rf: RequestFactory, zapier_token: AuthToken
+        self, rf: RequestFactory, active_token: AuthToken
     ) -> None:
-        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
         authenticate_request(request)
-        assert request.auth == zapier_token
-        assert request.user == zapier_token.user
+        assert request.auth == active_token
+        assert request.user == active_token.user
 
     def test_authenticate_missing_token_header(self, rf: RequestFactory) -> None:
         request = rf.get("/")
@@ -37,18 +37,18 @@ class TestAuthenticateRequest:
             authenticate_request(request)
 
     def test_authenticate_inactive_user_error(
-        self, rf: RequestFactory, zapier_token: AuthToken
+        self, rf: RequestFactory, active_token: AuthToken
     ) -> None:
-        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
-        zapier_token.user.is_active = False
-        zapier_token.user.save()
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
+        active_token.user.is_active = False
+        active_token.user.save()
         with pytest.raises(TokenUserError):
             authenticate_request(request)
 
     def test_authenticate_token_user_error(
-        self, rf: RequestFactory, zapier_token: AuthToken
+        self, rf: RequestFactory, active_token: AuthToken
     ) -> None:
-        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
+        request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
         request.user = get_user_model().objects.create(username=str(uuid4()))
         with pytest.raises(TokenUserError):
             authenticate_request(request)

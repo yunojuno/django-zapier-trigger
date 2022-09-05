@@ -15,10 +15,10 @@
 # class TestZapierTrigger:
 #     @pytest.mark.parametrize("scope", ["foo"])
 #     def test_decorator(
-#         self, scope: str, rf: RequestFactory, zapier_token: AuthToken
+#         self, scope: str, rf: RequestFactory, active_token: AuthToken
 #     ) -> None:
-#         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
-#         request.auth = zapier_token
+#         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
+#         request.auth = active_token
 
 #         @polling_trigger(scope)
 #         def view(request: HttpRequest) -> HttpResponse:
@@ -31,14 +31,14 @@
 #             resp = view(request)
 #         assert resp.status_code == 200
 #         assert resp.headers[http_headers.HEADER_SCOPE] == scope
-#         assert resp.headers[http_headers.HEADER_TOKEN] == zapier_token.api_key_short
+#         assert resp.headers[http_headers.HEADER_TOKEN] == active_token.api_key_short
 #         assert resp.headers[http_headers.HEADER_COUNT] == "2"
 #         assert resp.headers[http_headers.HEADER_OBJECT_ID] == "ObjA"
 
-#     def test_scope_mismatch(self, rf: RequestFactory, zapier_token: AuthToken) -> None:
-#         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
-#         request.auth = zapier_token
-#         zapier_token.set_scopes(["bar"])
+#     def test_scope_mismatch(self, rf: RequestFactory, active_token: AuthToken) -> None:
+#         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
+#         request.auth = active_token
+#         active_token.set_scopes(["bar"])
 
 #         @polling_trigger("foo")
 #         def view(request: HttpRequest) -> HttpResponse:
