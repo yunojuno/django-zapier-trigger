@@ -1,14 +1,13 @@
 import logging
 
-from django.http import HttpRequest, HttpResponseForbidden, JsonResponse
+from django.http import HttpRequest, JsonResponse
 
-from .models import TokenAuthRequest
+from zapier.decorators import zapier_view
 
 logger = logging.getLogger(__name__)
-from .decorators import authenticate_zapier_view
 
 
-@authenticate_zapier_view
+@zapier_view
 def auth_check(request: HttpRequest) -> JsonResponse:
     """
     Authenticate Zapier request.
@@ -21,5 +20,4 @@ def auth_check(request: HttpRequest) -> JsonResponse:
 
     """
     logger.debug("Successful token check for token: %s", request.auth.api_key_short)
-    TokenAuthRequest.objects.create(token=request.auth)
     return JsonResponse(data=request.auth.auth_response, safe=False)

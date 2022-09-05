@@ -1,24 +1,23 @@
 from django.contrib import admin
-from django.urls import path
+from django.urls import include, path
 
-# from tests.zapier.triggers.polling.views import (
-#     FirstOrLastNameView,
-#     FullNameView,
-#     UsernameView,
-#     UserView,
-# )
-from zapier.contrib.authtoken.views import auth_check
+from tests.zapier.triggers.polling.views import (
+    FirstOrLastNameView,
+    FullNameView,
+    UsernameView,
+    UserView,
+)
 
 admin.autodiscover()
 
 urlpatterns = [
-    path("zapier/auth/", auth_check, name="zapier_token_check"),
-    # path("zapier/tests/user/", UserView.as_view(), name="user_view"),
-    # path("zapier/tests/username/", UsernameView.as_view(), name="username_view"),
-    # path("zapier/tests/fullname/", FullNameView.as_view(), name="full_view"),
-    # path(
-    #     "zapier/tests/firstorlast/",
-    #     FirstOrLastNameView.as_view(),
-    #     name="first_or_last_view",
-    # ),
+    path("zapier/", include("zapier.contrib.authtoken.urls", namespace="zapier")),
+    path("zapier/tests/user/", UserView.as_view(), name="user_view"),
+    path("zapier/tests/username/", UsernameView.as_view(), name="username_view"),
+    path("zapier/tests/fullname/", FullNameView.as_view(), name="full_view"),
+    path(
+        "zapier/tests/firstorlast/",
+        FirstOrLastNameView.as_view(),
+        name="first_or_last_view",
+    ),
 ]

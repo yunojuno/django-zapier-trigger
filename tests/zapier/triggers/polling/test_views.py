@@ -6,7 +6,7 @@ import pytest
 from django.test import RequestFactory
 from django.urls import reverse
 
-from zapier.contrib.authtoken.models import AuthToken, TokenAuthRequest
+from zapier.contrib.authtoken.models import AuthToken
 from zapier.triggers.polling.models import PollingTriggerRequest
 
 from .views import FirstOrLastNameView, FullNameView, User, UsernameView
@@ -76,19 +76,16 @@ def test_firstorlastnameview(
 
 @pytest.mark.django_db
 def test_end_to_end(client, zapier_token: AuthToken) -> None:
-    url1 = reverse("zapier_token_check")
+    url1 = reverse("zapier:auth_check")
     url2 = reverse("username_view")
-    assert TokenAuthRequest.objects.count() == 0
     assert PollingTriggerRequest.objects.count() == 0
 
     # token auth check
     resp = client.get(url1, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     assert resp.status_code == 200
-    assert TokenAuthRequest.objects.count() == 1
     assert PollingTriggerRequest.objects.count() == 0
 
     # initial trigger request
     resp = client.get(url2, HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
     assert resp.status_code == 200
-    assert TokenAuthRequest.objects.count() == 1
     assert PollingTriggerRequest.objects.count() == 1

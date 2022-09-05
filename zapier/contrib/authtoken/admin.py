@@ -8,31 +8,14 @@ from django.http import HttpRequest
 from django.utils.translation import gettext as _
 from django.utils.translation import gettext_lazy as _lazy
 
-from .models import AuthToken, TokenAuthRequest
+from .models import AuthToken
 
 logger = logging.getLogger(__name__)
-
-
-class TokenAuthRequestInline(admin.TabularInline):
-    max_num = 0
-    model = TokenAuthRequest
-    readonly_fields = ["timestamp"]
-    verbose_name_plural = "Most recent token auth requests"
-
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        ids = TokenAuthRequest.objects.all().values_list("id", flat=True)[:5]
-        return TokenAuthRequest.objects.filter(id__in=ids).order_by("-id")
-
-    def has_delete_permission(
-        self, request: HttpRequest, obj: TokenAuthRequest
-    ) -> bool:
-        return False
 
 
 @admin.register(AuthToken)
 class AuthTokenAdmin(admin.ModelAdmin):
     actions = ("refresh_tokens", "reset_tokens", "revoke_tokens")
-    inlines = (TokenAuthRequestInline,)
     list_display = ("user", "api_key")
     list_select_related = ("user",)
     readonly_fields = ("api_key", "created_at", "refreshed_at", "revoked_at")
@@ -80,22 +63,3 @@ class AuthTokenAdmin(admin.ModelAdmin):
             _("Successfully revoked selected zapier tokens"),
             messages.SUCCESS,
         )
-
-
-@admin.register(TokenAuthRequest)
-class TokenAuthAdmin(admin.ModelAdmin):
-    list_display = ("id", "token_value", "token_user", "timestamp")
-    list_filter = ("timestamp",)
-
-    def has_change_permission(
-        self, request: HttpRequest, obj: TokenAuthRequest | None = None
-    ) -> bool:
-        return False
-
-    @admin.display()
-    def token_value(self, obj: TokenAuthRequest) -> str:
-        return obj.token.api_key
-
-    @admin.display()
-    def token_user(self, obj: TokenAuthRequest) -> str:
-        return obj.token.user

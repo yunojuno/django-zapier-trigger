@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.db.models import QuerySet
 from django.http import HttpRequest
 
-from zapier.utils.admin import format_json_for_admin
+from zapier.admin import format_json_for_admin
 
 from .models import RestHookEvent, RestHookSubscription
 

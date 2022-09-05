@@ -12,10 +12,11 @@ from .exceptions import TokenAuthError
 
 
 class ZapierUser(AnonymousUser):
-    """Subclass of anonymous user to identify Zapier requests."""
+    """Subclass of anonymous user to help identify Zapier requests."""
+
 
 class AuthToken(models.Model):
-    """Per-user Zapier API token."""
+    """Model used to support API Key authentication for Zapier apps."""
 
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="zapier_token"
@@ -51,12 +52,23 @@ class AuthToken(models.Model):
         return str(self.api_key).split("-")[0]
 
     @property
+    def connection_label(self) -> str:
+        """Return text to used by Zapier as the connection label."""
+        return f"{self.user.username} [{self.api_key_short}]"
+
+    @property
     def auth_response(self) -> dict[str, str]:
         """Return default successful auth response payload."""
         return {
-            "full_name": self.user.get_full_name(),
-            "token": self.api_key_short,
+            "connectionLabel": self.connection_label,
+            "apiKey": str(self.api_key),
         }
+
+    def save(self, *args: object, **kwargs: object) -> None:
+        self.is_active = not self.revoked_at
+        if "update_fields" in kwargs:
+            kwargs["update_fields"].append("is_active")  # type: ignore
+        super().save(*args, **kwargs)
 
     def refresh(self) -> None:
         """Update the api_key."""
@@ -84,29 +96,3 @@ class AuthToken(models.Model):
         self.refreshed_at = tz_now()
         self.revoked_at = None
         self.save(update_fields=["api_key", "refreshed_at", "revoked_at", "is_active"])
-        self.auth_requests.all().delete()
-
-    def get_most_recent_object(self, scope: str) -> dict | None:
-        """Return the most recent object logged."""
-        if log := (
-            self.requests.filter(scope=scope)
-            .exclude(count=0)
-            .order_by("timestamp")
-            .last()
-        ):
-            return log.most_recent_object
-        return None
-
-
-class TokenAuthRequest(models.Model):
-    """Record auth requests."""
-
-    token = models.ForeignKey(
-        AuthToken,
-        on_delete=models.CASCADE,
-        related_name="auth_requests",
-    )
-    timestamp = models.DateTimeField(default=tz_now)
-
-    class Meta:
-        get_latest_by = "timestamp"

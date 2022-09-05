@@ -21,7 +21,7 @@ class TestAuthenticateRequest:
         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {zapier_token.api_key}")
         authenticate_request(request)
         assert request.auth == zapier_token
-        assert request.user.is_anonymous
+        assert request.user == zapier_token.user
 
     def test_authenticate_missing_token_header(self, rf: RequestFactory) -> None:
         request = rf.get("/")

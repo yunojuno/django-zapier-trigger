@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.http import HttpRequest
 
 from .exceptions import MissingTokenHeader, TokenUserError, UnknownToken
-from .models import AuthToken, ZapierUser
+from .models import AuthToken
 
 
 def extract_bearer_token(request: HttpRequest) -> AuthToken:
@@ -27,10 +27,10 @@ def extract_bearer_token(request: HttpRequest) -> AuthToken:
 
 def authenticate_request(request: HttpRequest) -> None:
     """
-    Authenticate X-Api-Token request header.
+    Validate Authorization request header.
 
-    Sets request.user (ZapierUser) and request.auth (AuthToken) from the
-    AuthToken that matches the header.
+    Sets request.user and request.auth (AuthToken) from the AuthToken
+    that matches the header.
 
     Raises TokenAuthenticationError if the token is invalid / missing.
 
@@ -41,4 +41,6 @@ def authenticate_request(request: HttpRequest) -> None:
     if not auth_token.user.is_active:
         raise TokenUserError("Auth token user is inactive.")
     request.auth = auth_token
-    request.user = ZapierUser()
+    # NB: need to be careful here with downstream logging - this is a
+    # request _on behalf of_ the user, but they are not the user.
+    request.user = auth_token.user
