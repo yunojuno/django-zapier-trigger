@@ -6,7 +6,7 @@ import pytest
 from django.test import RequestFactory
 from django.urls import reverse
 
-from zapier.authtoken.models import AuthToken, TokenAuthRequest
+from zapier.contrib.authtoken.models import AuthToken, TokenAuthRequest
 from zapier.triggers.polling.models import PollingTriggerRequest
 
 from .views import FirstOrLastNameView, FullNameView, User, UsernameView

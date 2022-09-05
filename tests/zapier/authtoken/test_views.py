@@ -7,7 +7,7 @@ import pytest
 from django.test import Client
 from django.urls import reverse
 
-from zapier.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken
 
 
 @pytest.mark.django_db

@@ -8,7 +8,7 @@ from django.db import models, transaction
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.authtoken.exceptions import TokenAuthError
+from .exceptions import TokenAuthError
 
 
 class ZapierUser(AnonymousUser):

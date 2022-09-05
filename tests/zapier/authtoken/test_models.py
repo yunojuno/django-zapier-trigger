@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from zapier.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken
 
 
 @pytest.mark.django_db

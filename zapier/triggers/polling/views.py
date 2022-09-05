@@ -8,7 +8,7 @@ from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, JsonResponse
 from django.views import View
 
-from zapier.authtoken.views import authenticate_request
+from zapier.contrib.authtoken.views import authenticate_request
 
 from .settings import DEFAULT_PAGE_SIZE
 

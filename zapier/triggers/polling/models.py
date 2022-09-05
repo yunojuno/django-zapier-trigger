@@ -8,7 +8,7 @@ from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken
 from zapier.exceptions import JsonResponseError
 
 

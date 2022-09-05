@@ -3,8 +3,8 @@ from __future__ import annotations
 import pytest
 from django.http import HttpResponse, JsonResponse
 
-from zapier.authtoken.exceptions import JsonResponseError
-from zapier.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken
+from zapier.exceptions import JsonResponseError
 from zapier.triggers.polling.models import PollingTriggerRequest
 
 

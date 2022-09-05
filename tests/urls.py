@@ -7,7 +7,7 @@ from django.urls import path
 #     UsernameView,
 #     UserView,
 # )
-from zapier.authtoken.views import auth_check
+from zapier.contrib.authtoken.views import auth_check
 
 admin.autodiscover()
 

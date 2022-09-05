@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from typing import Callable
+from django.http import HttpRequest
 
-from django.http import HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
-
-from zapier.authtoken.models import AuthToken, ZapierUser
-
-from .exceptions import MissingTokenHeader, TokenAuthError, TokenUserError, UnknownToken
+from .exceptions import MissingTokenHeader, TokenUserError, UnknownToken
+from .models import AuthToken, ZapierUser
 
 
 def extract_bearer_token(request: HttpRequest) -> AuthToken:
@@ -45,16 +42,3 @@ def authenticate_request(request: HttpRequest) -> None:
         raise TokenUserError("Auth token user is inactive.")
     request.auth = auth_token
     request.user = ZapierUser()
-
-
-def authenticate_zapier_view(view_func) -> Callable:
-    """Authenticate token requests."""
-    def decorated_func(
-        request: HttpRequest, *view_args: object, **view_kwargs: object
-    ) -> HttpResponse:
-        try:
-            authenticate_request(request)
-            return view_func(request, *view_args, **view_kwargs)
-        except TokenAuthError as ex:
-            return HttpResponseForbidden(ex)
-    return decorated_func

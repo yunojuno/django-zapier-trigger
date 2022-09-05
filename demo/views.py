@@ -3,7 +3,7 @@ from django.http import HttpRequest, JsonResponse
 from django.views.decorators import csrf
 
 from demo.models import Book
-from zapier.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken
 
 # from zapier.triggers.polling.views import PollingTriggerView
 
