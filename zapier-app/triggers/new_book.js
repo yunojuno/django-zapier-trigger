@@ -1,7 +1,8 @@
 const subscription = require("./subscription");
+const EVENT_NAME = "new_book";
 
 module.exports = {
-    key: "new_book",
+    key: EVENT_NAME,
     noun: "Book",
     display: {
         label: "New Book",
@@ -11,10 +12,10 @@ module.exports = {
     },
     operation: {
         type: "hook",
-        perform: subscription.perform,
-        performList: subscription.list("new_book"),
-        performSubscribe: subscription.subscribe("new_book"),
-        performUnsubscribe: subscription.unsubscribe("new_book"),
+        perform: subscription.perform(EVENT_NAME),
+        performList: subscription.list(EVENT_NAME),
+        performSubscribe: subscription.subscribe(EVENT_NAME),
+        performUnsubscribe: subscription.unsubscribe(EVENT_NAME),
         sample: {
             id: "123456",
             authorName: "Arthur Conan Doyle",

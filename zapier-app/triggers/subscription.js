@@ -8,10 +8,19 @@ const headers = (z, bundle) => {
     };
 };
 
-const doPerform = async (z, bundle) => {
-    return [bundle.cleanedRequest];
+// Run when the hook triggers - by default this is a noop, but it could
+// be used to filter / inspect the payload. It's a closure just to keep
+// it consistent with all of the other functions - it's not required.
+const doPerform = (hook) => {
+    const performHook = async (z, bundle) => {
+        return [bundle.cleanedRequest];
+    };
+    return performHook;
 };
 
+// Run when the user creates a new Zap that subscribes to the hook
+// event. The hook name is passed in from the trigger configuration, and
+// passed through on the subsbscribe URL.
 const doSubscribe = (hook) => {
     const subscribeHook = (z, bundle) => {
         const options = {
@@ -19,6 +28,9 @@ const doSubscribe = (hook) => {
             method: "POST",
             headers: headers(z, bundle),
             body: {
+                // targetUrl is the Zapier URL to which event payloads
+                // will be posted. It is stored along with the
+                // subscription.
                 hookUrl: bundle.targetUrl
             }
         };
@@ -42,8 +54,8 @@ const doUnsubscribe = (hook) => {
             return response.json;
         });
     };
-    return unsubscribeHook
-}
+    return unsubscribeHook;
+};
 
 const doList = (hook) => {
     const listHook = (z, bundle) => {
