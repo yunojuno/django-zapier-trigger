@@ -1,96 +1,63 @@
 [
-{
-    "model": "auth.user",
-    "pk": 1,
-    "fields": {
-        "password": "pbkdf2_sha256$320000$QSRgvWxJvY0mMln0WX8Wr0$BO7NM5T1IJuFLg1FvqUUKcLNZLCuLsgjGszvXeYz+lo=",
-        "last_login": "2022-02-28T20:34:48.483Z",
-        "is_superuser": true,
-        "username": "demo",
-        "first_name": "",
-        "last_name": "",
-        "email": "demo@example.com",
-        "is_staff": true,
-        "is_active": true,
-        "date_joined": "2022-02-24T17:46:24.805Z",
-        "groups": [],
-        "user_permissions": []
+    {
+        "model": "auth.user",
+        "pk": 1,
+        "fields": {
+            "password": "pbkdf2_sha256$320000$QSRgvWxJvY0mMln0WX8Wr0$BO7NM5T1IJuFLg1FvqUUKcLNZLCuLsgjGszvXeYz+lo=",
+            "last_login": "2022-02-28T20:34:48.483Z",
+            "is_superuser": false,
+            "username": "demo",
+            "first_name": "Zapier",
+            "last_name": "Demo",
+            "email": "demo@example.com",
+            "is_staff": false,
+            "is_active": true,
+            "date_joined": "2022-02-24T17:46:24.805Z"
+        }
+    },
+    {
+        "model": "demo.book",
+        "pk": 1,
+        "fields": {
+            "title": "Great Expectations",
+            "author": "Charles Dickens",
+            "published_at": "2022-02-24T17:47:04Z"
+        }
+    },
+    {
+        "model": "demo.book",
+        "pk": 2,
+        "fields": {
+            "title": "Moby Dick",
+            "author": "Herman Melville",
+            "published_at": "2022-02-24T17:47:31Z"
+        }
+    },
+    {
+        "model": "demo.book",
+        "pk": 3,
+        "fields": {
+            "title": "Hound of the Baskervilles",
+            "author": "Sir Arthur Conan Doyle",
+            "published_at": "2022-02-24T17:47:40Z"
+        }
+    },
+    {
+        "model": "demo.book",
+        "pk": 4,
+        "fields": {
+            "title": "The Time Machine",
+            "author": "H.G. Wells",
+            "published_at": "2022-02-24T17:47:55Z"
+        }
+    },
+    {
+        "model": "demo.book",
+        "pk": 5,
+        "fields": {
+            "title": "Hot Water",
+            "author": "PG Wodehouse",
+            "published_at": "2022-02-24T17:48:04Z"
+        }
     }
-},
-{
-    "model": "auth.user",
-    "pk": 2,
-    "fields": {
-        "password": "pbkdf2_sha256$320000$xIp9S7xrvlSf1YcyYvCUrk$rKOdNbbrqJ67e8evGHXyhBGJ7lL2WBHsfWmDrst3V3Q=",
-        "last_login": null,
-        "is_superuser": false,
-        "username": "test_user",
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
-        "is_staff": false,
-        "is_active": true,
-        "date_joined": "2022-02-24T17:48:39Z",
-        "groups": [],
-        "user_permissions": []
-    }
-},
-{
-    "model": "authtoken.authtoken",
-    "pk": 1,
-    "fields": {
-        "user": 2,
-        "api_key": "606a8f63-ecbf-4a55-a727-9bd3a9ec1451",
-        "api_scopes": [
-            "*"
-        ],
-        "created_at": "2022-02-24T17:49:16.343Z",
-        "last_updated_at": "2022-02-24T17:49:19.865Z"
-    }
-},
-{
-    "model": "demo.book",
-    "pk": 1,
-    "fields": {
-        "title": "Great Expectations",
-        "author": "Charles Dickens",
-        "published_at": "2022-02-24T17:47:04Z"
-    }
-},
-{
-    "model": "demo.book",
-    "pk": 2,
-    "fields": {
-        "title": "Moby Dick",
-        "author": "Herman Melville",
-        "published_at": "2022-02-24T17:47:31Z"
-    }
-},
-{
-    "model": "demo.book",
-    "pk": 3,
-    "fields": {
-        "title": "Hound of the Baskervilles",
-        "author": "Sir Arthur Conan Doyle",
-        "published_at": "2022-02-24T17:47:40Z"
-    }
-},
-{
-    "model": "demo.book",
-    "pk": 4,
-    "fields": {
-        "title": "The Time Machine",
-        "author": "H.G. Wells",
-        "published_at": "2022-02-24T17:47:55Z"
-    }
-},
-{
-    "model": "demo.book",
-    "pk": 5,
-    "fields": {
-        "title": "Hot Water",
-        "author": "PG Wodehouse",
-        "published_at": "2022-02-24T17:48:04Z"
-    }
-}
 ]

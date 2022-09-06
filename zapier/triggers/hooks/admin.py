@@ -34,7 +34,7 @@ class RestHookEventInline(admin.TabularInline):
 
 @admin.register(RestHookSubscription)
 class RestHookSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ("scope", "subscribed_at", "is_active")
+    list_display = ("scope", "subscribed_at", "_is_active")
     readonly_fields = (
         "user",
         "scope",
@@ -44,6 +44,10 @@ class RestHookSubscriptionAdmin(admin.ModelAdmin):
         "uuid",
     )
     inlines = (RestHookEventInline,)
+
+    @admin.display(boolean=True)
+    def _is_active(self, obj: RestHookSubscription) -> bool:
+        return obj.is_active
 
 
 @admin.register(RestHookEvent)
@@ -57,6 +61,7 @@ class RestHookEventAdmin(admin.ModelAdmin):
         "started_at",
         "duration",
         "status_code",
+        "status",
     )
     readonly_fields = (
         "subscription",
@@ -64,6 +69,7 @@ class RestHookEventAdmin(admin.ModelAdmin):
         "finished_at",
         "duration",
         "status_code",
+        "status",
         "request_data",
         "response_data",
     )

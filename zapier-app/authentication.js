@@ -2,7 +2,7 @@
 
 module.exports = {
     type: "custom",
-    connectionLabel: "{{name}} [{{token}}]",
+    connectionLabel: "{{connectionLabel}}",
     test: {
         headers: {
             "Content-Type": "application/json",

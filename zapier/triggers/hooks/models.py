@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+import logging
 from datetime import timedelta
+from typing import Any
 from uuid import uuid4
 
 import requests
@@ -9,6 +12,13 @@ from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
+
+logger = logging.getLogger(__name__)
+
+
+def to_json(data: dict | list) -> Any:
+    """Use DjangoJSONEncoder to encode Python as JSON."""
+    return json.loads(json.dumps(data, cls=DjangoJSONEncoder))
 
 
 class RestHookSubscriptionQuerySet(models.QuerySet):
@@ -83,7 +93,7 @@ class RestHookSubscription(models.Model):
     def unsubscribe(self) -> None:
         self.target_url = ""
         self.unsubscribed_at = tz_now()
-        self.save(update_fields=["unsubscribed_at"])
+        self.save(update_fields=["target_url", "unsubscribed_at"])
 
     def resubscribe(self, target_url: str) -> None:
         self.target_url = target_url
@@ -98,7 +108,10 @@ class RestHookSubscription(models.Model):
             started_at=tz_now(),
             request_payload=event_data,
         )
-        response = requests.post(self.target_url, json=event_data)
+        logger.debug("Pushing webhook data:\n%s", event_data)
+        response = requests.post(self.target_url, json=to_json(event_data))
+        response.raise_for_status()
+        event.response_payload = response.json()
         event.finished_at = tz_now()
         event.status_code = response.status_code
         event.save()
@@ -116,6 +129,9 @@ class RestHookEvent(models.Model):
     started_at = models.DateTimeField(default=tz_now, blank=True, null=True)
     finished_at = models.DateTimeField(blank=True, null=True)
     request_payload = models.JSONField(blank=True, null=True, encoder=DjangoJSONEncoder)
+    response_payload = models.JSONField(
+        blank=True, null=True, encoder=DjangoJSONEncoder
+    )
     status_code = models.IntegerField()
 
     def __str__(self) -> str:
@@ -130,3 +146,9 @@ class RestHookEvent(models.Model):
         if not self.is_complete:
             return None
         return self.finished_at - self.started_at
+
+    @property
+    def status(self) -> str:
+        if not self.response_payload:
+            return "unknown"
+        return self.response_payload.get("status", "unknown")
