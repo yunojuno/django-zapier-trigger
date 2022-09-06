@@ -12,7 +12,7 @@ from zapier.contrib.authtoken.models import AuthToken
 
 @pytest.mark.django_db
 def test_successful_authentication(client: Client, active_token: AuthToken) -> None:
-    url = reverse("zapier:auth_check")
+    url = reverse("zapier_auth:auth_check")
     resp = client.get(url, HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
     assert resp.status_code == 200, resp.content
     assert json.loads(resp.content) == active_token.auth_response
@@ -20,6 +20,6 @@ def test_successful_authentication(client: Client, active_token: AuthToken) -> N
 
 @pytest.mark.django_db
 def test_unsuccessful_authentication(client: Client) -> None:
-    url = reverse("zapier:auth_check")
+    url = reverse("zapier_auth:auth_check")
     resp = client.get(url, HTTP_AUTHORIZATION=f"Bearer {uuid4()}")
-    assert resp.status_code == 403, resp
+    assert resp.status_code == 401, resp

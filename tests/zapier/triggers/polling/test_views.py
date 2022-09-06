@@ -76,7 +76,7 @@ def test_firstorlastnameview(
 
 @pytest.mark.django_db
 def test_end_to_end(client, active_token: AuthToken) -> None:
-    url1 = reverse("zapier:auth_check")
+    url1 = reverse("zapier_auth:auth_check")
     url2 = reverse("username_view")
     assert PollingTriggerRequest.objects.count() == 0
 

@@ -95,11 +95,10 @@ class RestHookSubscription(models.Model):
         """Push data to Zapier."""
         event = RestHookEvent(
             subscription=self,
-            started_at = tz_now(),
+            started_at=tz_now(),
             request_payload=event_data,
         )
         response = requests.post(self.target_url, json=event_data)
-        event.response_payload = response.json()
         event.finished_at = tz_now()
         event.status_code = response.status_code
         event.save()
@@ -117,9 +116,6 @@ class RestHookEvent(models.Model):
     started_at = models.DateTimeField(default=tz_now, blank=True, null=True)
     finished_at = models.DateTimeField(blank=True, null=True)
     request_payload = models.JSONField(blank=True, null=True, encoder=DjangoJSONEncoder)
-    response_payload = models.JSONField(
-        blank=True, null=True, encoder=DjangoJSONEncoder
-    )
     status_code = models.IntegerField()
 
     def __str__(self) -> str:

@@ -15,7 +15,7 @@ def get_request_authenticator() -> Callable[[HttpRequest], None]:
     request_authenticator = getattr(
         settings,
         "ZAPIER_REQUEST_AUTHENTICATOR",
-        "zapier.contrib.authtoken.auth.authenticate_request"
+        "zapier.contrib.authtoken.auth.authenticate_request",
     )
     if callable(request_authenticator):
         return request_authenticator

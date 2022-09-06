@@ -8,7 +8,6 @@ from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
-from zapier.contrib.authtoken.models import AuthToken
 from zapier.exceptions import JsonResponseError
 
 
@@ -34,7 +33,7 @@ class PollingTriggerRequest(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name="zapier_trigger_requests"
+        related_name="zapier_trigger_requests",
     )
     scope = models.CharField(max_length=50)
     timestamp = models.DateTimeField(default=tz_now)

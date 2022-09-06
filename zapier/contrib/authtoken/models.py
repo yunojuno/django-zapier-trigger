@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from django.conf import settings
 from django.contrib.auth.models import AnonymousUser
-from django.db import models, transaction
+from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
@@ -47,6 +47,11 @@ class AuthToken(models.Model):
     def api_key_short(self) -> str:
         """Return short version of the api_key - like short commit hash."""
         return str(self.api_key).split("-")[0]
+
+    @property
+    def http_authorization(self) -> str:
+        """Return the 'Bearer api_key' header value."""
+        return f"Bearer {self.api_key}"
 
     @property
     def connection_label(self) -> str:

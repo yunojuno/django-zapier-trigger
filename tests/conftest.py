@@ -36,7 +36,4 @@ def active_token(user: settings.AUTH_USER_MODEL) -> AuthToken:
 
 @pytest.fixture
 def inactive_token(user: settings.AUTH_USER_MODEL) -> AuthToken:
-    return AuthToken.objects.create(
-        user=user,
-        revoked_at=tz_now()
-    )
+    return AuthToken.objects.create(user=user, revoked_at=tz_now())

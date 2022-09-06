@@ -16,7 +16,7 @@ def mock_view(request: HttpRequest) -> HttpResponse:
     "side_effect,status_code",
     [
         (None, 200),
-        (AuthenticationError, 403),
+        (AuthenticationError, 401),
     ],
 )
 def test_zapier_view(rf: RequestFactory, side_effect, status_code) -> None:
