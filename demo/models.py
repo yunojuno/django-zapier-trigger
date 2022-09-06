@@ -22,5 +22,5 @@ class Book(models.Model):
             "id": self.id,
             "title": self.title,
             "author": self.author,
-            "published_at": self.published_at,
+            "published": self.published_at.year,
         }

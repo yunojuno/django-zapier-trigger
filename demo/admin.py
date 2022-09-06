@@ -20,6 +20,9 @@ class BookAdmin(admin.ModelAdmin):
     def fire_webhook(self, request: HttpRequest, queryset: BookQuerySet) -> None:
         subscriptions = RestHookSubscription.objects.active().filter(scope="new_book")
         subs_count = subscriptions.count()
+        if not subs_count:
+            self.message_user(request, "No subscribers found.", "warning")
+            return
         books = [b.serialize() for b in queryset]
         books_count = len(books)
         for s in subscriptions:
