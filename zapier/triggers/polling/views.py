@@ -10,6 +10,7 @@ from django.views import View
 
 from zapier.decorators import zapier_view
 
+from .context_managers import PollingTriggerRequestLogger
 from .models import PollingTriggerRequest
 from .settings import DEFAULT_PAGE_SIZE
 
@@ -95,3 +96,10 @@ class PollingTriggerView(View):
             content=response.content,
         )
         return response
+
+
+@zapier_view
+def polling_trigger_view(request: HttpRequest, scope: str) -> JsonResponse:
+    """Call polling trigger view and record the output."""
+    with PollingTriggerRequestLogger() as log:
+        return log.run_view(request, scope)

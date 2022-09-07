@@ -5,7 +5,7 @@ from django.conf import settings
 from django.http import HttpRequest
 
 
-def import_func(fqn: str) -> Callable[[HttpRequest], None]:
+def import_func(fqn: str) -> Callable:
     module, func = fqn.rsplit(".", 1)
     m = importlib.import_module(module)
     return getattr(m, func)

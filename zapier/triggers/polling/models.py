@@ -1,30 +1,10 @@
 from __future__ import annotations
 
-import json
-
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db import models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
-
-from zapier.exceptions import JsonResponseError
-
-
-class PollingTriggerRequestManager(models.Manager):
-    def create(
-        self, user: settings.AUTH_USER_MODEL, scope: str, content: str | bytes
-    ) -> PollingTriggerRequest:
-        try:
-            data = json.loads(content)
-        except json.decoder.JSONDecodeError as ex:
-            raise JsonResponseError("Invalid JSON") from ex
-        return super().create(
-            user=user,
-            scope=scope,
-            data=data,
-            count=len(data) if data else 0,
-        )
 
 
 class PollingTriggerRequest(models.Model):
@@ -43,12 +23,19 @@ class PollingTriggerRequest(models.Model):
         help_text=_lazy("The JSON response sent to Zapier."),
         encoder=DjangoJSONEncoder,
     )
+    last_object_id = models.CharField(
+        max_length=100,
+        default="",
+        blank=True,
+        help_text=_lazy(
+            "The id of the most recent object returned to Zapier ("
+            "will be empty if no data was returned in this response)."
+        ),
+    )
     count = models.IntegerField(
         default=0,
         help_text=_lazy("Denormalised object count, used for filtering"),
     )
-
-    objects: PollingTriggerRequestManager = PollingTriggerRequestManager()
 
     class Meta:
         get_latest_by = "timestamp"

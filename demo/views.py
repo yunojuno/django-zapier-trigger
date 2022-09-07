@@ -1,9 +1,10 @@
 from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse
+from django.shortcuts import render
 from django.views.decorators import csrf
+from django.views.decorators.http import require_http_methods
 
 from demo.models import Book
-from zapier.contrib.authtoken.models import AuthToken
 from zapier.triggers.polling.views import PollingTriggerView
 
 
@@ -15,16 +16,12 @@ class NewBooksById(PollingTriggerView):
 
     scope = "new_books"
 
-    def get_last_obj(self, request: HttpRequest) -> dict | None:
-        token: AuthToken = request.auth
-        if log := token.requests.exclude(count=0).last():
-            return log.most_recent_object
-        return None
-
     def get_queryset(self, request: HttpRequest) -> QuerySet:
-        qs = Book.objects.order_by("-id").values()
-        if obj := self.get_last_obj(request):
-            return qs.filter(id__gt=obj["id"])
+        # noop - just checking it's there
+        requests = request.auth.user.zapier_trigger_requests
+        qs = Book.objects.exclude(count=0).order_by("-id").values()
+        if previous := requests.exclude(count=0).order_by("id").last():
+            return qs.filter(id__gt=previous.last_object_id)
         return qs
 
 
@@ -39,3 +36,9 @@ class NewBooksByTimestamp(NewBooksById):
 @csrf.csrf_exempt
 def receive_webhook(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"result": "ok"})
+
+
+@require_http_methods(["GET"])
+def new_books(request: HttpRequest, scope: str) -> JsonResponse:
+    response = render(request, "zapier/new_book.json", content_type="application/json")
+    return response

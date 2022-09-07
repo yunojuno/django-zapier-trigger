@@ -32,7 +32,7 @@ class PollingTriggerRequestInline(admin.TabularInline):
 
 @admin.register(PollingTriggerRequest)
 class PollingTriggerRequestAdmin(admin.ModelAdmin):
-    list_display = ("token_value", "token_user", "scope", "timestamp", "count")
+    list_display = ("user", "scope", "timestamp", "count")
     list_filter = ("scope", "timestamp")
     exclude = ("data",)
     readonly_fields = ("pretty_data",)
@@ -45,11 +45,3 @@ class PollingTriggerRequestAdmin(admin.ModelAdmin):
     @admin.display(description="Data (formatted)")
     def pretty_data(self, obj: PollingTriggerRequest) -> str:
         return format_json_for_admin(obj.data)
-
-    @admin.display()
-    def token_value(self, obj: PollingTriggerRequest) -> str:
-        return obj.token.api_key
-
-    @admin.display()
-    def token_user(self, obj: PollingTriggerRequest) -> str:
-        return obj.token.user

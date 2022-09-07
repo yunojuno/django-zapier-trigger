@@ -81,3 +81,6 @@ ALLOWED_HOSTS = (
 
 if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
+
+# ===============
+ZAPIER_TRIGGER_VIEW_FUNC_MAP = {"new_books": "demo.views.new_books"}
