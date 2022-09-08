@@ -7,6 +7,20 @@ from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
 
+class PollingTriggerRequestManager(models.Manager):
+    def previous(
+        self, user: settings.AUTH_USER_MODEL, scope: str
+    ) -> PollingTriggerRequest | None:
+        """Return the most recent non-zero request."""
+        return (
+            self.get_queryset()
+            .exclude(count=0)
+            .filter(user=user, scope=scope)
+            .order_by("timestamp")
+            .last()
+        )
+
+
 class PollingTriggerRequest(models.Model):
     """Record polling trigger requests."""
 
@@ -36,6 +50,8 @@ class PollingTriggerRequest(models.Model):
         default=0,
         help_text=_lazy("Denormalised object count, used for filtering"),
     )
+
+    objects = PollingTriggerRequestManager()
 
     class Meta:
         get_latest_by = "timestamp"

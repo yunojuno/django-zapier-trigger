@@ -17,7 +17,9 @@ class JsonResponseUnauthorized(JsonResponse):
         super().__init__(*args, **kwargs)
 
 
-def zapier_view(view_func: Callable[..., HttpResponse]) -> Callable[..., HttpResponse]:
+def zapier_view_auth(
+    view_func: Callable[..., HttpResponse]
+) -> Callable[..., HttpResponse]:
     """
     Authenticate requests from Zapier.
 

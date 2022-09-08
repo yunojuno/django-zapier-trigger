@@ -84,3 +84,4 @@ if not DEBUG:
 
 # ===============
 ZAPIER_TRIGGER_VIEW_FUNC_MAP = {"new_books": "demo.views.new_books"}
+ZAPIER_POLLING_REQUEST_LOG = "ALL"

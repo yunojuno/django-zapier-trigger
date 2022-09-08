@@ -8,7 +8,7 @@ module.exports = {
             "Content-Type": "application/json"
         },
         url: "{{process.env.BASE_API_URL}}/zapier/auth/",
-        method: "POST",
+        method: "GET",
         body: {
             api_key: "{{bundle.authData.api_key}}",
             email: "{{bundle.authData.email}}"
