@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import include, path
 from django.views import debug
 
+from .views import NewFilms, new_films
+
 admin.autodiscover()
 
 urlpatterns = [
@@ -14,8 +16,6 @@ urlpatterns = [
     path(
         "zapier/hooks/", include("zapier.triggers.hooks.urls", namespace="zapier_hooks")
     ),
-    path(
-        "zapier/triggers/",
-        include("zapier.triggers.polling.urls", namespace="zapier_polling"),
-    ),
+    path("demo/films/v1/", NewFilms.as_view()),
+    path("demo/films/v2/", new_films),
 ]

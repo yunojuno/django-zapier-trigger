@@ -53,9 +53,13 @@ def zapier_view(view_func: Callable[..., JsonResponse]) -> Callable[..., JsonRes
         request: HttpRequest, *view_args: object, **view_kwargs: object
     ) -> HttpResponse:
         if not hasattr(request, "auth"):
-            JsonResponseUnauthorized({"error": "Unauthorized request (missing auth)."})
+            return JsonResponseUnauthorized(
+                {"error": "Unauthorized request (missing auth)."}
+            )
         if not request.user.is_authenticated:
-            JsonResponseUnauthorized({"error": "Unauthorized request (missing user)."})
+            return JsonResponseUnauthorized(
+                {"error": "Unauthorized request (missing user)."}
+            )
         return view_func(request, *view_args, **view_kwargs)
 
     return decorated_func

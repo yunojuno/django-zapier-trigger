@@ -5,7 +5,7 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
 
 from demo.models import Book
-from zapier.decorators import zapier_view
+from zapier.decorators import zapier_auth
 from zapier.triggers.polling.decorators import zapier_view_request_log
 from zapier.triggers.polling.models import PollingTriggerRequest
 from zapier.triggers.polling.views import PollingTriggerView
@@ -30,7 +30,7 @@ class NewFilms(PollingTriggerView):
         return qs
 
 
-@zapier_view
+@zapier_auth
 @zapier_view_request_log("new_films")
 def new_films(request: HttpRequest) -> JsonResponse:
     if cursor_id := PollingTriggerRequest.objects.cursor_id(request.user, "new_films"):

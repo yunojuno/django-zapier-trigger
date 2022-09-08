@@ -5,7 +5,7 @@ import logging
 from django.contrib import admin
 from django.http import HttpRequest
 
-from demo.models import Book, BookQuerySet
+from demo.models import Book, BookQuerySet, Film
 from zapier.triggers.hooks.models import RestHookSubscription
 
 logger = logging.getLogger(__name__)
@@ -33,3 +33,8 @@ class BookAdmin(admin.ModelAdmin):
             f"Sent {books_count} new books to {subs_count} subscribers.",
             "success",
         )
+
+
+@admin.register(Film)
+class FilmAdmin(admin.ModelAdmin):
+    pass

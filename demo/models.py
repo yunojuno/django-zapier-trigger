@@ -24,3 +24,27 @@ class Book(models.Model):
             "author": self.author,
             "published": self.published_at.year,
         }
+
+
+class FilmQuerySet(models.QuerySet):
+    pass
+
+
+class Film(models.Model):
+
+    title = models.CharField(max_length=100)
+    director = models.CharField(max_length=100)
+    release_date = models.DateField()
+
+    objects = FilmQuerySet.as_manager()
+
+    def __str__(self) -> str:
+        return f"{self.title} by {self.director} ({self.release_date.year})"
+
+    def serialize(self) -> dict:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "director": self.director,
+            "release_date": self.released_date,
+        }

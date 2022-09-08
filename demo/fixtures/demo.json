@@ -59,5 +59,32 @@
             "author": "PG Wodehouse",
             "published_at": "2022-02-24T17:48:04Z"
         }
+    },
+    {
+        "model": "demo.film",
+        "pk": 1,
+        "fields": {
+            "title": "The Passion of Joan of Arc",
+            "director": "Carl Dreyer",
+            "release_date": "1928-04-21"
+        }
+    },
+    {
+        "model": "demo.film",
+        "pk": 2,
+        "fields": {
+            "title": "Alexander Nevsky",
+            "director": "Sergei Eisenstein",
+            "release_date": "1938-12-01"
+        }
+    },
+    {
+        "model": "demo.film",
+        "pk": 3,
+        "fields": {
+            "title": "Seventh Seal",
+            "director": "Ingmar Bergman",
+            "release_date": "1957-02-16"
+        }
     }
 ]
