@@ -9,9 +9,10 @@ from django.http import HttpRequest, JsonResponse
 from django.views import View
 
 from zapier.decorators import zapier_auth
+from zapier.triggers.polling.models import PollingTriggerRequest
 
 from .decorators import zapier_view_request_log
-from .settings import DEFAULT_PAGE_SIZE, get_view_func
+from .settings import DEFAULT_PAGE_SIZE
 
 # helpful shared mypy type hints
 FeedObject: TypeAlias = dict
@@ -29,8 +30,14 @@ class PollingTriggerView(View):
     page_size = DEFAULT_PAGE_SIZE
     serializer: FeedSerializer | None = None
 
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        """Return the next queryset - must be in reverse chrono order."""
+    def get_queryset(self, request: HttpRequest, cursor_id: str | None) -> QuerySet:
+        """
+        Return the next queryset - must be in reverse chrono order.
+
+        The cursor_id param is the `last_object_id` of the previous request
+        for this trigger by this user, and is available for pagination.
+
+        """
         raise NotImplementedError
 
     def get_page_size(self, request: HttpRequest) -> int:
@@ -79,21 +86,26 @@ class PollingTriggerView(View):
         return JsonResponse(data, safe=False)
 
     def get(self, request: HttpRequest) -> JsonResponse:
-        """Return the serialized data for the trigger."""
-        @zapier_view_auth  # handles authentication
+        """
+        Return the serialized data for the trigger.
+
+        The structure of this method looks a bit odd, but it's done to
+        allow the decorators to work as if this was a function not a
+        class method (i.e. no self).
+
+        """
+
+        @zapier_auth  # handles authentication
         @zapier_view_request_log(self.scope)  # logs the request
         def _get(request: HttpRequest) -> JsonResponse:
-            queryset = self.get_queryset(request)
+            # fetch the id of the last object returned from the logs
+            cursor_id = PollingTriggerRequest.objects.cursor_id(
+                request.auth.user, self.scope
+            )
+            queryset = self.get_queryset(request, cursor_id)
             serializer = self.get_serializer(request)
             page_size = self.get_page_size(request)
             data = self.get_data(serializer, queryset, page_size)
             return self.get_response(data)
 
         return _get(request)
-
-
-@zapier_auth
-def polling_trigger_view(request: HttpRequest, scope: str) -> JsonResponse:
-    """Call polling trigger view and record the output."""
-    view_func = get_view_func(scope)
-    return zapier_view_request_log(scope, view_func(request))

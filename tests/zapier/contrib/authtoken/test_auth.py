@@ -10,7 +10,7 @@ from zapier.contrib.authtoken.exceptions import (
     TokenUserError,
     UnknownToken,
 )
-from zapier.contrib.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken, zapier_user
 
 
 @pytest.mark.django_db
@@ -21,7 +21,7 @@ class TestAuthenticateRequest:
         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
         authenticate_request(request)
         assert request.auth == active_token
-        assert request.user == active_token.user
+        assert request.user == zapier_user
 
     def test_authenticate_missing_token_header(self, rf: RequestFactory) -> None:
         request = rf.get("/")

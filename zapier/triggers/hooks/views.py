@@ -7,11 +7,11 @@ from django.http import HttpRequest, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.http import require_http_methods
 
-from zapier.decorators import zapier_view_auth
+from zapier.decorators import zapier_auth
 from zapier.triggers.hooks.models import RestHookSubscription
 
 
-@zapier_view_auth
+@zapier_auth
 @require_http_methods(["POST"])
 def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
     """Create a new REST Hook subscription."""
@@ -35,7 +35,7 @@ def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
     return JsonResponse({"id": str(subscription.uuid), "scope": hook}, status=201)
 
 
-@zapier_view_auth
+@zapier_auth
 @require_http_methods(["DELETE"])
 def unsubscribe(request: HttpRequest, hook: str, subscription_id: UUID) -> JsonResponse:
     """Delete a RestHookSubscription."""
@@ -44,7 +44,7 @@ def unsubscribe(request: HttpRequest, hook: str, subscription_id: UUID) -> JsonR
     return JsonResponse({"id": subscription_id}, status=204)
 
 
-@zapier_view_auth
+@zapier_auth
 @require_http_methods(["GET"])
 def list(request: HttpRequest, hook: str) -> JsonResponse:
     """

@@ -1,6 +1,6 @@
 import logging
 from functools import wraps
-from typing import Callable, TypeAlias
+from typing import Any, Callable
 
 from django.http import HttpRequest, JsonResponse
 
@@ -23,10 +23,14 @@ def zapier_view_request_log(scope: str) -> Callable:
     static. `NON_ZERO` is the default.
 
     """
-    def decorator(view_func):
 
+    def decorator(
+        view_func: Callable[..., JsonResponse]
+    ) -> Callable[..., JsonResponse]:
         @wraps(view_func)
-        def decorated_func(request: HttpRequest, *view_args, **view_kwargs) -> JsonResponse:
+        def decorated_func(
+            request: HttpRequest, *view_args: Any, **view_kwargs: Any
+        ) -> JsonResponse:
 
             response: JsonResponse = view_func(request, *view_args, **view_kwargs)
 
@@ -38,15 +42,13 @@ def zapier_view_request_log(scope: str) -> Callable:
             if not data and TRIGGER_REQUEST_LOG == "NON_ZERO":
                 logger.debug("Ignoring empty polling response.")
 
-            count = len(data) if data else 0
-            last_object_id = data[0]["id"] if data else ""
             PollingTriggerRequest.objects.create(
-                user=request.user,
+                user=request.auth.user,
                 scope=scope,
                 data=data,
-                count=count,
-                last_object_id=last_object_id,
             )
             return response
+
         return decorated_func
+
     return decorator

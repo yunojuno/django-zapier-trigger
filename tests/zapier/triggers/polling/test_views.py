@@ -6,7 +6,7 @@ import pytest
 from django.test import RequestFactory
 from django.urls import reverse
 
-from zapier.contrib.authtoken.models import AuthToken
+from zapier.contrib.authtoken.models import AuthToken, zapier_user
 from zapier.triggers.polling.models import PollingTriggerRequest
 
 from .views import FirstOrLastNameView, FullNameView, User, UsernameView
@@ -18,9 +18,10 @@ def test_usernameview(
 ) -> None:
     request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
     request.auth = active_token
+    request.user = zapier_user
     view = UsernameView.as_view()
     resp = view(request)
-    assert resp.status_code == 200
+    assert resp.status_code == 200, resp.content
     data = json.loads(resp.content)
     assert data == sorted(
         ({"id": u.id, "username": u.username} for u in three_users),

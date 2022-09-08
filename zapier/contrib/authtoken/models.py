@@ -91,3 +91,7 @@ class AuthToken(models.Model):
         self.refreshed_at = tz_now()
         self.revoked_at = None
         self.save(update_fields=["api_key", "refreshed_at", "revoked_at"])
+
+
+# instance of ZapierUser used for logging purposes
+zapier_user = ZapierUser()

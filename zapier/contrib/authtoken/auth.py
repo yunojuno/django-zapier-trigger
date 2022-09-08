@@ -3,7 +3,7 @@ from __future__ import annotations
 from django.http import HttpRequest
 
 from .exceptions import MissingTokenHeader, TokenUserError, UnknownToken
-from .models import AuthToken
+from .models import AuthToken, zapier_user
 
 
 def extract_bearer_token(request: HttpRequest) -> AuthToken:
@@ -41,6 +41,4 @@ def authenticate_request(request: HttpRequest) -> None:
     if not auth_token.user.is_active:
         raise TokenUserError("Auth token user is inactive.")
     request.auth = auth_token
-    # NB: need to be careful here with downstream logging - this is a
-    # request _on behalf of_ the user, but they are not the user.
-    request.user = auth_token.user
+    request.user = zapier_user

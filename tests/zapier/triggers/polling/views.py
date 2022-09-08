@@ -38,15 +38,15 @@ class FirstNameSerializer:
 class UserView(PollingTriggerView):
     """Test view that serializes the whole User object - FAILS."""
 
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        return User.objects.exclude(id=request.auth.user_id).order_by("-id")
+    def get_queryset(self, request: HttpRequest, cursor_id: str | None) -> QuerySet:
+        return User.objects.exclude(id=request.auth.user.id).order_by("-id")
 
 
 class UsernameView(UserView):
     """Test view that serializes a subset of fields."""
 
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        return super().get_queryset(request).values("id", "username")
+    def get_queryset(self, request: HttpRequest, cursor_id: str | None) -> QuerySet:
+        return super().get_queryset(request, None).values("id", "username")
 
 
 class FullNameView(UserView):
