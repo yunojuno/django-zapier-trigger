@@ -1,12 +1,5 @@
 // generic functions supporting RestHook operations
-
-const headers = (z, bundle) => {
-    return {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        Authorization: `Bearer ${bundle.authData.api_key}`
-    };
-};
+const headers = require("./headers");
 
 // Run when the hook triggers - by default this is a noop, but it could
 // be used to filter / inspect the payload. It's a closure just to keep
@@ -26,7 +19,7 @@ const doSubscribe = (hook) => {
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/subscribe/`,
             method: "POST",
-            headers: headers(z, bundle),
+            headers: headers.headers(z, bundle),
             body: {
                 // targetUrl is the Zapier URL to which event payloads
                 // will be posted. It is stored along with the
