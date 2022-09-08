@@ -1,4 +1,5 @@
 import logging
+from functools import wraps
 from typing import Callable, TypeAlias
 
 from django.http import HttpRequest, JsonResponse
@@ -7,12 +8,10 @@ from .models import PollingTriggerRequest
 from .response import parse_response
 from .settings import TRIGGER_REQUEST_LOG
 
-PollingTriggerView: TypeAlias = Callable[[HttpRequest, str], JsonResponse]
-
 logger = logging.getLogger(__name__)
 
 
-def zapier_view_request_log(view_func: PollingTriggerView) -> PollingTriggerView:
+def zapier_view_request_log(scope: str) -> Callable:
     """
     Log a polling trigger request from Zapier.
 
@@ -24,25 +23,30 @@ def zapier_view_request_log(view_func: PollingTriggerView) -> PollingTriggerView
     static. `NON_ZERO` is the default.
 
     """
+    def decorator(view_func):
 
-    def decorated_func(request: HttpRequest, scope: str) -> JsonResponse:
+        @wraps(view_func)
+        def decorated_func(request: HttpRequest, *view_args, **view_kwargs) -> JsonResponse:
 
-        response: JsonResponse = view_func(request, scope)
-        if not TRIGGER_REQUEST_LOG:
-            logger.debug("Ignoring polling request.")
+            response: JsonResponse = view_func(request, *view_args, **view_kwargs)
+
+            if not TRIGGER_REQUEST_LOG:
+                logger.debug("Ignoring polling request.")
+                return response
+
+            data = parse_response(response)
+            if not data and TRIGGER_REQUEST_LOG == "NON_ZERO":
+                logger.debug("Ignoring empty polling response.")
+
+            count = len(data) if data else 0
+            last_object_id = data[0]["id"] if data else ""
+            PollingTriggerRequest.objects.create(
+                user=request.user,
+                scope=scope,
+                data=data,
+                count=count,
+                last_object_id=last_object_id,
+            )
             return response
-        data = parse_response(response)
-        if not data and TRIGGER_REQUEST_LOG == "NON_ZERO":
-            logger.debug("Ignoring empty polling response.")
-        count = len(data) if data else 0
-        last_object_id = data[0]["id"] if data else ""
-        PollingTriggerRequest.objects.create(
-            user=request.user,
-            scope=scope,
-            data=data,
-            count=count,
-            last_object_id=last_object_id,
-        )
-        return response
-
-    return decorated_func
+        return decorated_func
+    return decorator

@@ -7,6 +7,8 @@ from django.views.decorators import csrf
 from django.views.decorators.http import require_http_methods
 
 from demo.models import Book
+from zapier.decorators import zapier_view
+from zapier.triggers.polling.decorators import zapier_view_request_log
 from zapier.triggers.polling.models import PollingTriggerRequest
 from zapier.triggers.polling.views import PollingTriggerView
 
@@ -43,10 +45,11 @@ def receive_webhook(request: HttpRequest) -> JsonResponse:
     return JsonResponse({"result": "ok"})
 
 
-@require_http_methods(["GET"])
-def new_books(request: HttpRequest, scope: str) -> JsonResponse:
+@zapier_view
+@zapier_view_request_log("new_books")
+def new_books(request: HttpRequest) -> JsonResponse:
     if previous_request := PollingTriggerRequest.objects.previous(
-        user=request.user, scope=scope
+        user=request.user, scope="new_books"
     ):
         last_object_id = previous_request.last_object_id
         logger.debug(

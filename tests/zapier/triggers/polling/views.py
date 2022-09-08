@@ -38,8 +38,6 @@ class FirstNameSerializer:
 class UserView(PollingTriggerView):
     """Test view that serializes the whole User object - FAILS."""
 
-    scope = "test_scope"
-
     def get_queryset(self, request: HttpRequest) -> QuerySet:
         return User.objects.exclude(id=request.auth.user_id).order_by("-id")
 

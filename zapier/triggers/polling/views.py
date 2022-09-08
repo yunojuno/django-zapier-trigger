@@ -8,7 +8,7 @@ from django.db.models.query import ValuesIterable
 from django.http import HttpRequest, JsonResponse
 from django.views import View
 
-from zapier.decorators import zapier_view_auth
+from zapier.decorators import zapier_auth
 
 from .decorators import zapier_view_request_log
 from .settings import DEFAULT_PAGE_SIZE, get_view_func
@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 
 class PollingTriggerView(View):
 
+    scope: str = "REPLACE_WITH_TRIGGER_KEY"
     page_size = DEFAULT_PAGE_SIZE
     serializer: FeedSerializer | None = None
 
@@ -79,9 +80,8 @@ class PollingTriggerView(View):
 
     def get(self, request: HttpRequest) -> JsonResponse:
         """Return the serialized data for the trigger."""
-
         @zapier_view_auth  # handles authentication
-        @zapier_view_request_log  # logs the request
+        @zapier_view_request_log(self.scope)  # logs the request
         def _get(request: HttpRequest) -> JsonResponse:
             queryset = self.get_queryset(request)
             serializer = self.get_serializer(request)
@@ -92,9 +92,8 @@ class PollingTriggerView(View):
         return _get(request)
 
 
-@zapier_view_auth
-@zapier_view_request_log
+@zapier_auth
 def polling_trigger_view(request: HttpRequest, scope: str) -> JsonResponse:
     """Call polling trigger view and record the output."""
     view_func = get_view_func(scope)
-    return view_func(request, scope)
+    return zapier_view_request_log(scope, view_func(request))
