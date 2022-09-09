@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-zapier-triggers"
-version = "0.4.beta1"
+version = "1.0.alpha1"
 description = "Simple Django app for managing Zapier triggers."
 license = "MIT"
 authors = ["YunoJuno <code@yunojuno.com>"]
@@ -10,11 +10,12 @@ homepage = "https://github.com/yunojuno/django-zapier-trigger"
 repository = "https://github.com/yunojuno/django-zapier-trigger"
 documentation = "https://github.com/yunojuno/pdjango-zapier-trigger"
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
     "Framework :: Django",
     "Framework :: Django :: 3.2",
     "Framework :: Django :: 4.0",
+    "Framework :: Django :: 4.1",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
