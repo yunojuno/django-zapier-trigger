@@ -46,5 +46,5 @@ class Film(models.Model):
             "id": self.id,
             "title": self.title,
             "director": self.director,
-            "release_date": self.released_date,
+            "release_date": self.release_date,
         }

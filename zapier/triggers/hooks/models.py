@@ -50,6 +50,7 @@ class RestHookSubscription(models.Model):
     trigger = models.CharField(
         max_length=50,
         db_index=True,
+        help_text=_lazy("The name of the trigger event to subscribe to."),
     )
     target_url = models.URLField(
         help_text=_lazy("The webhook URL to which any payload will be POSTed.")

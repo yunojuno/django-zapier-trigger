@@ -10,7 +10,7 @@ from zapier.triggers.hooks.models import RestHookSubscription
 
 @pytest.mark.django_db
 def test_subscribe(client: Client, active_token: AuthToken) -> None:
-    url = reverse("zapier_hooks:subscribe", kwargs={"hook": "foo"})
+    url = reverse("zapier_hooks:subscribe", kwargs={"trigger": "foo"})
     assert RestHookSubscription.objects.count() == 0
     response = client.post(
         url,
@@ -31,7 +31,7 @@ def test_subscribe(client: Client, active_token: AuthToken) -> None:
 def test_resubscribe(
     client: Client, inactive_subscription: RestHookSubscription
 ) -> None:
-    url = reverse("zapier_hooks:subscribe", kwargs={"hook": "foo"})
+    url = reverse("zapier_hooks:subscribe", kwargs={"trigger": "foo"})
     active_token = AuthToken.objects.get(user=inactive_subscription.user)
     response = client.post(
         url,
@@ -53,7 +53,7 @@ def test_unsubscribe(client: Client, active_subscription: RestHookSubscription) 
     url = reverse(
         "zapier_hooks:unsubscribe",
         kwargs={
-            "hook": active_subscription.trigger,
+            "trigger": active_subscription.trigger,
             "subscription_id": active_subscription.uuid,
         },
     )
@@ -76,7 +76,7 @@ def test_unsubscribe(client: Client, active_subscription: RestHookSubscription) 
 def test_list(client: Client, active_token: AuthToken) -> None:
     url = reverse(
         "zapier_hooks:list",
-        kwargs={"hook": "new_hook"},
+        kwargs={"trigger": "new_hook"},
     )
     response = client.get(
         url,

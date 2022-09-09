@@ -4,7 +4,7 @@ from django.db.models import QuerySet
 from django.http import HttpRequest, JsonResponse
 from django.shortcuts import render
 
-from demo.models import Book
+from demo.models import Film, FilmQuerySet
 from zapier.decorators import zapier_auth
 from zapier.triggers.polling.decorators import zapier_view_request_log
 from zapier.triggers.polling.models import PollingTriggerRequest
@@ -17,17 +17,26 @@ def test(request: HttpRequest, number: int) -> JsonResponse:
     return JsonResponse([{"id": i} for i in reversed(range(number))], safe=False)
 
 
+class FilmSerializer:
+    def __init__(self, films: FilmQuerySet, many: bool = True) -> None:
+        self.films = films
+        self.many = many
+
+    @property
+    def data(self) -> list[dict]:
+        return [film.serialize() for film in self.films]
+
+
 class NewFilms(PollingTriggerView):
 
     trigger = "new_films"
+    serializer = FilmSerializer
 
     def get_queryset(self, request: HttpRequest, cursor_id: str | None) -> QuerySet:
-        # noop - just checking it's there
-        assert request.auth.user.zapier_trigger_requests  # noqa: S101
-        qs = Book.objects.order_by("-id").values()
+        qs = Film.objects.all()
         if cursor_id:
             return qs.filter(id__gt=cursor_id)
-        return qs
+        return qs.order_by("-id")
 
 
 @zapier_auth
