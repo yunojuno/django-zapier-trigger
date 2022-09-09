@@ -22,7 +22,7 @@ def test_subscribe(client: Client, active_token: AuthToken) -> None:
     # implicit assert that there is one subscription
     subscription = RestHookSubscription.objects.get()
     assert subscription.target_url == "https://www.google.com"
-    assert subscription.scope == "foo"
+    assert subscription.trigger == "foo"
     assert subscription.user == active_token.user
     assert subscription.is_active
 
@@ -43,7 +43,7 @@ def test_resubscribe(
     # implicit assert that there is one subscription
     subscription = RestHookSubscription.objects.get()
     assert subscription.target_url == "https://www.google.com"
-    assert subscription.scope == "foo"
+    assert subscription.trigger == "foo"
     assert subscription.user == active_token.user
     assert subscription.is_active
 
@@ -53,7 +53,7 @@ def test_unsubscribe(client: Client, active_subscription: RestHookSubscription) 
     url = reverse(
         "zapier_hooks:unsubscribe",
         kwargs={
-            "hook": active_subscription.scope,
+            "hook": active_subscription.trigger,
             "subscription_id": active_subscription.uuid,
         },
     )

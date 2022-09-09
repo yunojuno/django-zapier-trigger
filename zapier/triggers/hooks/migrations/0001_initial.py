@@ -31,7 +31,7 @@ class Migration(migrations.Migration):
                     ),
                 ),
                 ("uuid", models.UUIDField(default=uuid.uuid4, help_text="Public ID")),
-                ("scope", models.CharField(db_index=True, max_length=50)),
+                ("trigger", models.CharField(db_index=True, max_length=50)),
                 (
                     "target_url",
                     models.URLField(

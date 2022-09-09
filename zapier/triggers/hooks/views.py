@@ -21,18 +21,18 @@ def subscribe(request: HttpRequest, hook: str) -> JsonResponse:
     # instance we have an inactive subscription, so we update the target
     # url (it will be different) and reset the timestamps.
     if subscription := RestHookSubscription.objects.filter(
-        scope=hook,
+        trigger=hook,
         user=request.auth.user,
     ).last():
         subscription.resubscribe(hook_url)
     else:
         subscription = RestHookSubscription.objects.create(
-            scope=hook,
+            trigger=hook,
             user=request.auth.user,
             target_url=hook_url,
         )
     # response JSON is stored in `bundle.subscribeData`
-    return JsonResponse({"id": str(subscription.uuid), "scope": hook}, status=201)
+    return JsonResponse({"id": str(subscription.uuid), "trigger": hook}, status=201)
 
 
 @zapier_auth

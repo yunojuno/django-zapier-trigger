@@ -1,5 +1,4 @@
 // generic functions supporting RestHook operations
-const headers = require("./headers");
 
 // Run when the hook triggers - by default this is a noop, but it could
 // be used to filter / inspect the payload. It's a closure just to keep
@@ -19,7 +18,6 @@ const doSubscribe = (hook) => {
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/subscribe/`,
             method: "POST",
-            headers: headers.headers(z, bundle),
             body: {
                 // targetUrl is the Zapier URL to which event payloads
                 // will be posted. It is stored along with the
@@ -40,7 +38,6 @@ const doUnsubscribe = (hook) => {
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/unsubscribe/${bundle.subscribeData.id}/`,
             method: "DELETE",
-            headers: headers(z, bundle)
         };
         return z.request(options).then((response) => {
             response.throwForStatus();
@@ -56,7 +53,6 @@ const doList = (hook) => {
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/list/`,
             method: "GET",
-            headers: headers(z, bundle)
         };
         return z.request(options).then((response) => {
             response.throwForStatus();

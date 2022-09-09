@@ -17,7 +17,7 @@ class PollingTriggerRequestInline(admin.TabularInline):
     max_num = 0
     model = PollingTriggerRequest
     exclude = ("data",)
-    readonly_fields = ("timestamp", "scope", "count")
+    readonly_fields = ("timestamp", "trigger", "count")
     verbose_name_plural = "Most recent polling trigger requests"
 
     def get_queryset(self, request: HttpRequest) -> QuerySet:
@@ -32,8 +32,8 @@ class PollingTriggerRequestInline(admin.TabularInline):
 
 @admin.register(PollingTriggerRequest)
 class PollingTriggerRequestAdmin(admin.ModelAdmin):
-    list_display = ("user", "scope", "timestamp", "count")
-    list_filter = ("scope", "timestamp")
+    list_display = ("user", "trigger", "timestamp", "count")
+    list_filter = ("trigger", "timestamp")
     exclude = ("data",)
     readonly_fields = ("pretty_data",)
 

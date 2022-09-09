@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                         verbose_name="ID",
                     ),
                 ),
-                ("scope", models.CharField(max_length=50)),
+                ("trigger", models.CharField(max_length=50)),
                 ("timestamp", models.DateTimeField(default=django.utils.timezone.now)),
                 (
                     "data",

@@ -6,7 +6,11 @@ class TokenAuthError(AuthenticationError):
 
 
 class MissingTokenHeader(TokenAuthError):
-    """Request is missing the X-Api-Token header."""
+    """Request is missing the Authorization header."""
+
+
+class TokenInactiveError(AuthenticationError):
+    """AuthToken is inactive."""
 
 
 class UnknownToken(TokenAuthError):

@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 class PollingTriggerView(View):
 
-    scope: str = "REPLACE_WITH_TRIGGER_KEY"
+    trigger: str = "REPLACE_WITH_TRIGGER_KEY"
     page_size = DEFAULT_PAGE_SIZE
     serializer: FeedSerializer | None = None
 
@@ -96,11 +96,11 @@ class PollingTriggerView(View):
         """
 
         @zapier_auth  # handles authentication
-        @zapier_view_request_log(self.scope)  # logs the request
+        @zapier_view_request_log(self.trigger)  # logs the request
         def _get(request: HttpRequest) -> JsonResponse:
             # fetch the id of the last object returned from the logs
             cursor_id = PollingTriggerRequest.objects.cursor_id(
-                request.auth.user, self.scope
+                request.auth.user, self.trigger
             )
             queryset = self.get_queryset(request, cursor_id)
             serializer = self.get_serializer(request)

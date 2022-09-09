@@ -7,7 +7,7 @@ from zapier.triggers.hooks.models import RestHookSubscription
 @pytest.fixture
 def active_subscription(active_token: AuthToken) -> RestHookSubscription:
     return RestHookSubscription.objects.create(
-        scope="foo",
+        trigger="foo",
         user=active_token.user,
         target_url="https://www.google.com",
     )
@@ -16,7 +16,7 @@ def active_subscription(active_token: AuthToken) -> RestHookSubscription:
 @pytest.fixture
 def inactive_subscription(active_token: AuthToken) -> RestHookSubscription:
     subscription = RestHookSubscription.objects.create(
-        scope="foo",
+        trigger="foo",
         user=active_token.user,
         target_url="https://www.google.com",
     )

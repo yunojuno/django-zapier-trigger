@@ -16,12 +16,12 @@ class PollingTriggerRequestManager(models.Manager):
             kwargs.setdefault("last_object_id", data[0]["id"])
         return super().create(*args, **kwargs)
 
-    def cursor_id(self, user: settings.AUTH_USER_MODEL, scope: str) -> str | None:
+    def cursor_id(self, user: settings.AUTH_USER_MODEL, trigger: str) -> str | None:
         """Return the id of the most recent non-zero request."""
         if previous := (
             self.get_queryset()
             .exclude(count=0)
-            .filter(user=user, scope=scope)
+            .filter(user=user, trigger=trigger)
             .order_by("timestamp")
             .last()
         ):
@@ -37,7 +37,7 @@ class PollingTriggerRequest(models.Model):
         on_delete=models.CASCADE,
         related_name="zapier_trigger_requests",
     )
-    scope = models.CharField(max_length=50)
+    trigger = models.CharField(max_length=50)
     timestamp = models.DateTimeField(default=tz_now)
     data = models.JSONField(
         default=list,

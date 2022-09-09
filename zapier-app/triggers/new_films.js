@@ -1,11 +1,9 @@
-const headers = require("./headers");
 const EVENT_NAME = "new_films";
 
 const doPerform = (z, bundle) => {
     const options = {
         url: `${process.env.BASE_API_URL}/demo/films/v1/`,
-        method: "GET",
-        headers: headers.headers(z, bundle)
+        method: "GET"
     };
     return z.request(options).then((response) => {
         response.throwForStatus();

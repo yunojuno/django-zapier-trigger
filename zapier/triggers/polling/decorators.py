@@ -11,7 +11,7 @@ from .settings import TRIGGER_REQUEST_LOG
 logger = logging.getLogger(__name__)
 
 
-def zapier_view_request_log(scope: str) -> Callable:
+def zapier_view_request_log(trigger: str) -> Callable:
     """
     Log a polling trigger request from Zapier.
 
@@ -44,7 +44,7 @@ def zapier_view_request_log(scope: str) -> Callable:
 
             PollingTriggerRequest.objects.create(
                 user=request.auth.user,
-                scope=scope,
+                trigger=trigger,
                 data=data,
             )
             return response

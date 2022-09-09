@@ -24,7 +24,7 @@ class AuthTokenAdmin(admin.ModelAdmin):
 
     @admin.display(
         description=_lazy(
-            "Refresh selected zapier tokens (reset token uuid, retain logs, scopes)"
+            "Refresh selected zapier tokens (reset token uuid, retain logs, triggers)"
         )
     )
     def refresh_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
@@ -38,7 +38,7 @@ class AuthTokenAdmin(admin.ModelAdmin):
 
     @admin.display(
         description=_lazy(
-            "Reset selected zapier tokens (reset logs, retain token uuid, scopes)"
+            "Reset selected zapier tokens (reset logs, retain token uuid, triggers)"
         )
     )
     def reset_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:
@@ -52,7 +52,7 @@ class AuthTokenAdmin(admin.ModelAdmin):
 
     @admin.display(
         description=_lazy(
-            "Revoke selected zapier tokens (remove scopes, retain token uuid, logs)"
+            "Revoke selected zapier tokens (remove triggers, retain token uuid, logs)"
         )
     )
     def revoke_tokens(self, request: HttpRequest, queryset: QuerySet) -> None:

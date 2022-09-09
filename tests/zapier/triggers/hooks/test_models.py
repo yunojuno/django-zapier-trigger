@@ -9,7 +9,7 @@ from zapier.triggers.hooks.models import RestHookSubscription
 @pytest.fixture
 def subscription(user: settings.AUTH_USER_MODEL) -> RestHookSubscription:
     return RestHookSubscription.objects.create(
-        user=user, scope="foo", target_url="https://www.google.com"
+        user=user, trigger="foo", target_url="https://www.google.com"
     )
 
 

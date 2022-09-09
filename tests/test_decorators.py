@@ -13,14 +13,14 @@
 
 # @pytest.mark.django_db
 # class TestZapierTrigger:
-#     @pytest.mark.parametrize("scope", ["foo"])
+#     @pytest.mark.parametrize("trigger", ["foo"])
 #     def test_decorator(
-#         self, scope: str, rf: RequestFactory, active_token: AuthToken
+#         self, trigger: str, rf: RequestFactory, active_token: AuthToken
 #     ) -> None:
 #         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
 #         request.auth = active_token
 
-#         @polling_trigger(scope)
+#         @polling_trigger(trigger)
 #         def view(request: HttpRequest) -> HttpResponse:
 #             return JsonResponse([{"id": "ObjA"}, {"id": "ObjB"}], safe=False)
 
@@ -30,15 +30,15 @@
 #         with freeze_time(now):
 #             resp = view(request)
 #         assert resp.status_code == 200
-#         assert resp.headers[http_headers.HEADER_SCOPE] == scope
+#         assert resp.headers[http_headers.HEADER_SCOPE] == trigger
 #         assert resp.headers[http_headers.HEADER_TOKEN] == active_token.api_key_short
 #         assert resp.headers[http_headers.HEADER_COUNT] == "2"
 #         assert resp.headers[http_headers.HEADER_OBJECT_ID] == "ObjA"
 
-#     def test_scope_mismatch(self, rf: RequestFactory, active_token: AuthToken) -> None:
+#     def test_trigger_mismatch(self, rf: RequestFactory, active_token: AuthToken) -> None:
 #         request = rf.get("/", HTTP_AUTHORIZATION=f"Bearer {active_token.api_key}")
 #         request.auth = active_token
-#         active_token.set_scopes(["bar"])
+#         active_token.set_triggers(["bar"])
 
 #         @polling_trigger("foo")
 #         def view(request: HttpRequest) -> HttpResponse:

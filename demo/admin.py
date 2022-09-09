@@ -18,7 +18,7 @@ class BookAdmin(admin.ModelAdmin):
 
     @admin.action(description='Push a "new book" notification to subscribers')
     def fire_webhook(self, request: HttpRequest, queryset: BookQuerySet) -> None:
-        subscriptions = RestHookSubscription.objects.active().filter(scope="new_book")
+        subscriptions = RestHookSubscription.objects.active().filter(trigger="new_book")
         subs_count = subscriptions.count()
         if not subs_count:
             self.message_user(request, "No subscribers found.", "warning")

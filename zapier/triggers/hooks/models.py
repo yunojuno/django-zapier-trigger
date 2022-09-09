@@ -22,11 +22,11 @@ def to_json(data: dict | list) -> Any:
 
 
 class RestHookSubscriptionQuerySet(models.QuerySet):
-    def active(self, scope: str | None = None) -> RestHookSubscriptionQuerySet:
+    def active(self, trigger: str | None = None) -> RestHookSubscriptionQuerySet:
         """Filter active subscriptions."""
         qs = self.filter(subscribed_at__isnull=False, unsubscribed_at__isnull=True)
-        if scope:
-            qs.filter(scope=scope)
+        if trigger:
+            qs.filter(trigger=trigger)
         return qs
 
 
@@ -47,7 +47,7 @@ class RestHookSubscription(models.Model):
         related_name="rest_hooks",
         on_delete=models.CASCADE,
     )
-    scope = models.CharField(
+    trigger = models.CharField(
         max_length=50,
         db_index=True,
     )
@@ -68,7 +68,7 @@ class RestHookSubscription(models.Model):
     objects = RestHookSubscriptionQuerySet.as_manager()
 
     def __str__(self) -> str:
-        return f"Subscription #{self.id} ('{self.scope}')"
+        return f"Subscription #{self.id} ('{self.trigger}')"
 
     @property
     def is_active(self) -> bool:
@@ -85,7 +85,7 @@ class RestHookSubscription(models.Model):
         return {
             "uuid": self.uuid,
             "user_id": self.user.pk,
-            "scope": self.scope,
+            "trigger": self.trigger,
             "url": self.target_url,
             "active": self.is_active,
         }
@@ -135,7 +135,7 @@ class RestHookEvent(models.Model):
     status_code = models.IntegerField()
 
     def __str__(self) -> str:
-        return f"'{self.subscription.scope}' event #{self.id}"
+        return f"'{self.subscription.trigger}' event #{self.id}"
 
     @property
     def is_complete(self) -> bool:

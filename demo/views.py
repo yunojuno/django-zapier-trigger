@@ -19,7 +19,7 @@ def test(request: HttpRequest, number: int) -> JsonResponse:
 
 class NewFilms(PollingTriggerView):
 
-    scope = "new_films"
+    trigger = "new_films"
 
     def get_queryset(self, request: HttpRequest, cursor_id: str | None) -> QuerySet:
         # noop - just checking it's there
