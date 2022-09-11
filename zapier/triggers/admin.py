@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class TriggerEventInline(admin.TabularInline):
     max_num = 0
     model = TriggerEvent
-    readonly_fields = ("event_type", "started_at", "duration", "status_code")
+    readonly_fields = ("http_method", "started_at", "duration", "status_code")
     exclude = ("user", "trigger", "finished_at", "event_data")
     verbose_name_plural = "Most recent webhook events"
 
@@ -79,7 +79,7 @@ class TriggerEventAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "trigger",
-        "event_type",
+        "http_method",
         "started_at",
         "duration",
         "status_code",
@@ -88,26 +88,21 @@ class TriggerEventAdmin(admin.ModelAdmin):
     readonly_fields = (
         "user",
         "trigger",
-        "event_type",
+        "http_method",
         "started_at",
         "finished_at",
         "duration",
         "subscription",
         "status_code",
-        "request_data",
-        "response_data",
+        "_event_data",
     )
+    exclude = ("event_data",)
     raw_id_fields = ("user", "subscription")
-    exclude = ("request_payload", "response_payload")
     search_fields = (
         "user__first_name",
         "user__last_name",
     )
 
-    @admin.display(description="Request data")
-    def request_data(self, obj: TriggerEvent) -> str:
-        return format_json_for_admin(obj.request_payload)
-
-    @admin.display(description="Response data")
-    def response_data(self, obj: TriggerEvent) -> str:
-        return format_json_for_admin(obj.response_payload)
+    @admin.display(description="Event data")
+    def _event_data(self, obj: TriggerEvent) -> str:
+        return format_json_for_admin(obj.event_data)

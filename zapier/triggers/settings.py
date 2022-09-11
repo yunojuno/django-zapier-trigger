@@ -1,7 +1,17 @@
 import importlib
+from typing import Callable, Type
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from rest_framework.authentication import BaseAuthentication
+from rest_framework.request import Request
+
+
+def import_from_path(path: str) -> Type | Callable:
+    """Import function from string path."""
+    module, func_or_klass = path.rsplit(".", 1)
+    m = importlib.import_module(module)
+    return getattr(m, func_or_klass)
 
 
 def get_authenticator(
@@ -19,12 +29,10 @@ def get_authenticator(
     instead.
 
     """
-    if authenticator_class == "":
-        return None
+    if not authenticator_class:
+        raise ImproperlyConfigured("Missing ZAPIER_TRIGGERS_AUTHENTICATION_CLASS.")
     if isinstance(authenticator_class, str):
-        module, klass = authenticator_class.rsplit(".", 1)
-        m = importlib.import_module(module)
-        return getattr(m, klass)
+        return import_from_path(authenticator_class)
     if issubclass(authenticator_class, BaseAuthentication):
         return authenticator_class
     raise ValueError(
@@ -32,8 +40,18 @@ def get_authenticator(
     )
 
 
+# set to True to reject requests that don't come from Zapier
+STRICT_MODE = bool(getattr(settings, "ZAPIER_TRIGGERS_STRICT_MODE", not settings.DEBUG))
+
 # Class passed to DRF authentication_classes for all Zapier views - NB
 # although DRF supports multiple authentication methods, Zapier does not.
 AUTHENTICATION_CLASS = get_authenticator(
-    getattr(settings, "ZAPIER_TRIGGER_AUTHENTICATION_CLASS", "")
+    getattr(settings, "ZAPIER_TRIGGERS_AUTHENTICATION_CLASS", "")
 )
+
+
+# {key: func} dict that maps triggers to a polling view func
+LIST_FUNCS: dict[str, Callable[[Request], list[dict]]] = {
+    key: import_from_path(value)
+    for key, value in getattr(settings, "ZAPIER_TRIGGERS_LIST_FUNCS", {}).items()
+}

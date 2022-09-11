@@ -82,8 +82,14 @@ if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
 
 # ===============
-# ZAPIER_TRIGGER_VIEW_FUNC_MAP = {"new_books": "demo.views.new_books"}
-ZAPIER_POLLING_REQUEST_LOG = "ALL"
-ZAPIER_TRIGGER_AUTHENTICATION_CLASS = (
+# reject requests where user-agent is not "Zapier"
+ZAPIER_TRIGGERS_STRICT_MODE = not DEBUG
+# authenticate inbound requests from Zapier
+ZAPIER_TRIGGERS_AUTHENTICATION_CLASS = (
     "rest_framework.authentication.TokenAuthentication"
 )
+# map of available triggers to list functions
+ZAPIER_TRIGGERS_LIST_FUNCS = {
+    "new_book": "demo.views.new_book",
+    "new_films": "demo.views.new_films",
+}

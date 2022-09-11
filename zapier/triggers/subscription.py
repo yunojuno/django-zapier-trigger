@@ -1,11 +1,8 @@
-# region: private functions for subscribe, unsubscribe, list actions
 import logging
 
-import requests
 from django.conf import settings as django_settings
-from django.utils.timezone import now as tz_now
 
-from zapier.triggers.models import TriggerEvent, TriggerSubscription
+from zapier.triggers.models import TriggerSubscription
 
 logger = logging.getLogger(__name__)
 
@@ -34,20 +31,3 @@ def subscribe(
 def unsubscribe(subscription: TriggerSubscription) -> None:
     """Delete a RestHookSubscription."""
     subscription.unsubscribe()
-
-
-def push(subscription: TriggerSubscription, event_data: dict) -> TriggerEvent:
-    """Push data to Zapier."""
-    logger.debug("Pushing webhook data:\n%s", event_data)
-    started_at = tz_now()
-    response = requests.post(subscription.target_url, json=event_data)
-    return TriggerEvent.objects.create(
-        user=subscription.user,
-        trigger=subscription.trigger,
-        subscription=subscription,
-        started_at=started_at,
-        finished_at=tz_now(),
-        event_type=TriggerEvent.TriggerEventType.REST_HOOK,
-        event_data=event_data,
-        status_code=response.status_code,
-    )

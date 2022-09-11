@@ -6,15 +6,15 @@ from django.contrib import admin
 from django.http import HttpRequest
 
 from demo.models import Book, BookQuerySet, Film
+from zapier.triggers.events import push
 from zapier.triggers.models import TriggerSubscription
-from zapier.triggers.subscription import push
 
 logger = logging.getLogger(__name__)
 
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-
+    pass
     actions = ["fire_webhook"]
 
     @admin.action(description='Push a "new book" notification to subscribers')

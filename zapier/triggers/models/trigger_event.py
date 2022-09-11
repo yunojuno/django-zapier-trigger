@@ -20,11 +20,6 @@ class TriggerEventQuerySet(models.QuerySet):
 
 
 class TriggerEvent(models.Model):
-    """Record each webhook POST."""
-
-    class TriggerEventType(models.TextChoices):
-        REST_HOOK = ("REST_HOOK", "Push (webhook)")
-        POLLING = ("POLLING", "Pull (polling)")
 
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
@@ -44,9 +39,9 @@ class TriggerEvent(models.Model):
             "The subscription to which the event was posted (null for polling events)."
         ),
     )
-    event_type = models.CharField(
-        max_length=10,
-        choices=TriggerEventType.choices,
+    http_method = models.CharField(
+        max_length=4,
+        help_text=_lazy("How the data was sent to Zapier - via GET, or POST."),
     )
     event_data = models.JSONField(
         blank=True,
