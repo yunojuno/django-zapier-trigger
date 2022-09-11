@@ -13,9 +13,8 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "zapier.contrib.authtoken",
-    "zapier.triggers.hooks",
-    "zapier.triggers.polling",
+    "rest_framework.authtoken",
+    "zapier.triggers",
 )
 
 MIDDLEWARE = [

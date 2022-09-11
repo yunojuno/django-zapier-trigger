@@ -13,9 +13,8 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "zapier.contrib.authtoken",
-    "zapier.triggers.hooks",
-    "zapier.triggers.polling",
+    "rest_framework.authtoken",
+    "zapier.triggers",
     "demo",
 )
 
@@ -83,5 +82,8 @@ if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
 
 # ===============
-ZAPIER_TRIGGER_VIEW_FUNC_MAP = {"new_books": "demo.views.new_books"}
+# ZAPIER_TRIGGER_VIEW_FUNC_MAP = {"new_books": "demo.views.new_books"}
 ZAPIER_POLLING_REQUEST_LOG = "ALL"
+ZAPIER_TRIGGER_AUTHENTICATION_CLASS = (
+    "rest_framework.authentication.TokenAuthentication"
+)

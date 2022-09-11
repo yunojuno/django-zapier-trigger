@@ -5,7 +5,7 @@ const newFilms = require("./triggers/new_films.js");
 const setRequestHeaders = (request, z, bundle) => {
     request.headers["Content-Type"] = "application/json";
     request.headers["Accept"] = "application/json";
-    request.headers["Authorization"] = `Bearer ${bundle.authData.api_key}`;
+    request.headers["Authorization"] = `Token ${bundle.authData.api_key}`;
     return request;
 };
 

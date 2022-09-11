@@ -3,7 +3,7 @@ module.exports = {
     type: "custom",
     connectionLabel: "{{connectionLabel}}",
     test: {
-        url: "{{process.env.BASE_API_URL}}/zapier/auth/",
+        url: "{{process.env.BASE_API_URL}}/zapier/triggers/auth/",
         method: "GET"
     },
     fields: [

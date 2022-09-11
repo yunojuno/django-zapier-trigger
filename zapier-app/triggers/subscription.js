@@ -3,7 +3,7 @@
 // Run when the hook triggers - by default this is a noop, but it could
 // be used to filter / inspect the payload. It's a closure just to keep
 // it consistent with all of the other functions - it's not required.
-const doPerform = (hook) => {
+const doPerform = (trigger) => {
     const performHook = async (z, bundle) => {
         return [bundle.cleanedRequest];
     };
@@ -13,10 +13,11 @@ const doPerform = (hook) => {
 // Run when the user creates a new Zap that subscribes to the hook
 // event. The hook name is passed in from the trigger configuration, and
 // passed through on the subsbscribe URL.
-const doSubscribe = (hook) => {
+const doSubscribe = (trigger) => {
     const subscribeHook = (z, bundle) => {
+        z.console.log(`Creating subscription for hook: ${trigger}`);
         const options = {
-            url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/subscribe/`,
+            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/subscriptions/`,
             method: "POST",
             body: {
                 // targetUrl is the Zapier URL to which event payloads
@@ -33,10 +34,11 @@ const doSubscribe = (hook) => {
     return subscribeHook;
 };
 
-const doUnsubscribe = (hook) => {
+const doUnsubscribe = (trigger) => {
     const unsubscribeHook = (z, bundle) => {
+        z.console.log(`Deleting subscription for hook: ${trigger}`);
         const options = {
-            url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/unsubscribe/${bundle.subscribeData.id}/`,
+            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/subscriptions/${bundle.subscribeData.id}/`,
             method: "DELETE",
         };
         return z.request(options).then((response) => {
@@ -47,11 +49,11 @@ const doUnsubscribe = (hook) => {
     return unsubscribeHook;
 };
 
-const doList = (hook) => {
+const doList = (trigger) => {
     const listHook = (z, bundle) => {
-        z.console.log(`Requesting list for hook: ${hook}`);
+        z.console.log(`Requesting list for hook: ${trigger}`);
         const options = {
-            url: `${process.env.BASE_API_URL}/zapier/hooks/${hook}/list/`,
+            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/`,
             method: "GET",
         };
         return z.request(options).then((response) => {

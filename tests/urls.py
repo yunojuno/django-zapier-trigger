@@ -16,7 +16,8 @@ urlpatterns = [
         include("zapier.contrib.authtoken.urls", namespace="zapier_auth"),
     ),
     path(
-        "zapier/hooks/", include("zapier.triggers.hooks.urls", namespace="zapier_hooks")
+        "zapier/hooks/",
+        include("zapier.triggers.hooks.urls", namespace="zapier_triggers"),
     ),
     path("zapier/tests/user/", UserView.as_view(), name="user_view"),
     path("zapier/tests/username/", UsernameView.as_view(), name="username_view"),
