@@ -4,6 +4,7 @@
 .python-version
 .tox
 .venv
+.vscode
 .zapierapprc
 *.bak
 *.egg-info
