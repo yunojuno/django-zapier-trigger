@@ -35,7 +35,7 @@ class TriggerSubscription(models.Model):
     )
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
-        related_name="zapier_sbuscriptions",
+        related_name="zapier_subscriptions",
         on_delete=models.CASCADE,
     )
     trigger = models.CharField(
