@@ -2,7 +2,7 @@ const EVENT_NAME = "new_films";
 
 const doPerform = (z, bundle) => {
     const options = {
-        url: `${process.env.BASE_API_URL}/demo/films/v1/`,
+        url: `${process.env.BASE_API_URL}/zapier/triggers/new_films/`,
         method: "GET"
     };
     return z.request(options).then((response) => {
