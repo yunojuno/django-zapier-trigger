@@ -82,13 +82,20 @@ def sample_trigger_func(request):
     return [{"id": 1, "title": "Huckleberry Finn"}]
 
 
+def empty_trigger_func(request):
+    return []
+
+
 ZAPIER_TRIGGERS = {
     # reject requests where user-agent is not "Zapier"
     "STRICT_MODE": not DEBUG,
     # authenticate inbound requests from Zapier
     "AUTHENTICATOR": "rest_framework.authentication.TokenAuthentication",
     # map of available triggers to list functions
-    "GET_DATA_FUNCS": {"new_book": "tests.settings.sample_trigger_func"},
+    "TRIGGERS": {
+        "new_book": "tests.settings.sample_trigger_func",
+        "no_book": "tests.settings.empty_trigger_func",
+    },
     # the JSON key used to extract the REST Hook url from inbound post ("hookUrl")
     "HOOK_URL_KEY": "hookUrl",
 }

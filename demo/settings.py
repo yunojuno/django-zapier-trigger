@@ -89,7 +89,7 @@ ZAPIER_TRIGGERS = {
     # authenticate inbound requests from Zapier
     "AUTHENTICATOR": "rest_framework.authentication.TokenAuthentication",
     # map of available triggers to list functions
-    "GET_DATA_FUNCS": {
+    "TRIGGERS": {
         "new_book": "demo.views.new_book",
         "new_films": "demo.views.new_films",
     },

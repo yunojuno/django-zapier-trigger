@@ -42,6 +42,22 @@ class TestTriggerView:
         event = active_token.user.zapier_trigger_events.get()
         assert event.event_data == self.get_new_book_data(request)
 
+    def test_get_missing_trigger(self, rf: RequestFactory, active_token: Token) -> None:
+        view = TriggerView.as_view()
+        url = reverse("zapier_triggers:list", kwargs={"trigger": "old_book"})
+        request = rf.get(url, HTTP_AUTHORIZATION=f"Token {active_token.key}")
+        response = view(request, "old_book")
+        assert response.status_code == 404
+
+    def test_get_empty_data(self, rf: RequestFactory, active_token: Token) -> None:
+        view = TriggerView.as_view()
+        url = reverse("zapier_triggers:list", kwargs={"trigger": "no_book"})
+        request = rf.get(url, HTTP_AUTHORIZATION=f"Token {active_token.key}")
+        response = view(request, "no_book")
+        assert response.status_code == 200
+        # no event is created if there is not data returned.
+        assert active_token.user.zapier_trigger_events.count() == 0
+
     def test_post(self, rf: RequestFactory, active_token: Token) -> None:
         view = TriggerView.as_view()
         url = reverse("zapier_triggers:subscribe", kwargs={"trigger": "new_book"})
