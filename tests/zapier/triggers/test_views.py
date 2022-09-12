@@ -5,7 +5,7 @@ from rest_framework.authtoken.models import Token
 from rest_framework.request import Request
 
 from zapier.triggers.models import TriggerSubscription
-from zapier.triggers.settings import get_trigger_data_func
+from zapier.triggers.settings import get_trigger
 from zapier.triggers.types import TriggerData
 from zapier.triggers.views import TriggerView
 
@@ -30,7 +30,7 @@ def test_auth_check__missing(client: Client, active_token: Token) -> None:
 @pytest.mark.django_db
 class TestTriggerView:
     def get_new_book_data(self, request: Request) -> TriggerData:
-        return get_trigger_data_func("new_book")(request)
+        return get_trigger("new_book")(request)
 
     def test_get(self, rf: RequestFactory, active_token: Token) -> None:
         view = TriggerView.as_view()

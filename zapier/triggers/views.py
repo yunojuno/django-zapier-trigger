@@ -22,12 +22,7 @@ from rest_framework.views import APIView
 from .models import TriggerEvent, TriggerSubscription
 from .permissions import IsZapier
 from .response import JsonResponse
-from .settings import (
-    HOOK_URL_KEY,
-    get_authenticator,
-    get_trigger_data_func,
-    trigger_exists,
-)
+from .settings import HOOK_URL_KEY, get_authenticator, get_trigger, trigger_exists
 from .subscription import subscribe, unsubscribe
 from .types import TriggerData, TriggerViewMethod
 
@@ -92,7 +87,7 @@ class TriggerView(APIView):
 
     def get_trigger_data(self, request: Request, trigger: str) -> TriggerData:
         """Call the configured trigger view function."""
-        return get_trigger_data_func(trigger)(request)
+        return get_trigger(trigger)(request)
 
     @trigger_method
     def get(self, request: Request, trigger: str) -> JsonResponse:
