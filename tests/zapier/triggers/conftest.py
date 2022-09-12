@@ -1,7 +1,15 @@
 import pytest
+from django.conf import settings
 from rest_framework.authtoken.models import Token
 
 from zapier.triggers.models import TriggerSubscription
+
+
+@pytest.fixture
+def subscription(user: settings.AUTH_USER_MODEL) -> TriggerSubscription:
+    return TriggerSubscription.objects.create(
+        user=user, trigger="foo", target_url="https://www.google.com"
+    )
 
 
 @pytest.fixture

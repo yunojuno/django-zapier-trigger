@@ -5,11 +5,11 @@ import logging
 
 from django.contrib import admin
 from django.core.serializers.json import DjangoJSONEncoder
-from django.db.models import QuerySet
-from django.http import HttpRequest
 from django.utils.html import format_html, mark_safe
 
 from .models import TriggerEvent, TriggerSubscription
+
+logger = logging.getLogger(__name__)
 
 
 def format_json_for_admin(data: dict) -> str:
@@ -33,28 +33,6 @@ def format_json_for_admin(data: dict) -> str:
     return format_html("<code>{}</code>", mark_safe(pretty))
 
 
-logger = logging.getLogger(__name__)
-
-
-class TriggerEventInline(admin.TabularInline):
-    max_num = 0
-    model = TriggerEvent
-    readonly_fields = ("http_method", "started_at", "duration", "status_code")
-    exclude = ("user", "trigger", "finished_at", "event_data")
-    verbose_name_plural = "Most recent webhook events"
-
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        # We cannot use a slice in the return QS as the admin app tries to
-        # apply its own filters and you can't filter a sliced queryset.
-        # To get around this we extract the ids of the most recent objects
-        # and then filter on those - in effect getting the last X objects.
-        ids = TriggerEvent.objects.order_by("-id").values_list("id", flat=True)[:10]
-        return TriggerEvent.objects.filter(id__in=ids).order_by("-id")
-
-    def has_delete_permission(self, request: HttpRequest, obj: TriggerEvent) -> bool:
-        return False
-
-
 @admin.register(TriggerSubscription)
 class TriggerSubscriptionAdmin(admin.ModelAdmin):
     list_display = ("user", "trigger", "subscribed_at", "_is_active")
@@ -66,7 +44,6 @@ class TriggerSubscriptionAdmin(admin.ModelAdmin):
         "unsubscribed_at",
         "uuid",
     )
-    inlines = (TriggerEventInline,)
 
     @admin.display(boolean=True)
     def _is_active(self, obj: TriggerSubscription) -> bool:

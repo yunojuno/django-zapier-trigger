@@ -6,7 +6,7 @@ from django.contrib import admin
 from django.http import HttpRequest
 
 from demo.models import Book, BookQuerySet, Film
-from zapier.triggers.events import push
+from zapier.triggers.event import push
 from zapier.triggers.models import TriggerSubscription
 
 logger = logging.getLogger(__name__)

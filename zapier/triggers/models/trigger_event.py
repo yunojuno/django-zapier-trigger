@@ -11,14 +11,6 @@ from django.utils.translation import gettext_lazy as _lazy
 from .trigger_subscription import TriggerSubscription
 
 
-class TriggerEventQuerySet(models.QuerySet):
-    def webhook_events(self) -> TriggerEventQuerySet:
-        return self.filter(event_type=TriggerEvent.TriggerEventType.REST_HOOK)
-
-    def polling_events(self) -> TriggerEventQuerySet:
-        return self.filter(event_type=TriggerEvent.TriggerEventType.POLLING)
-
-
 class TriggerEvent(models.Model):
 
     user = models.ForeignKey(
@@ -55,31 +47,11 @@ class TriggerEvent(models.Model):
         help_text=_lazy("HTTP status code received from Zapier")
     )
 
-    objects = TriggerEventQuerySet.as_manager()
-
     def __str__(self) -> str:
         return f"'{self.trigger}' event #{self.id}"
 
     @property
-    def is_complete(self) -> bool:
-        return self.started_at and self.finished_at
-
-    @property
     def duration(self) -> timedelta | None:
-        if not self.is_complete:
+        if not self.finished_at:
             return None
         return self.finished_at - self.started_at
-
-    @property
-    def status(self) -> str:
-        if not self.response_payload:
-            return "unknown"
-        return self.response_payload.get("status", "unknown")
-
-    @property
-    def is_webhook(self) -> bool:
-        return self.event_type == self.TriggerEventType.REST_HOOK
-
-    @property
-    def is_polling(self) -> bool:
-        return self.event_type == self.TriggerEventType.POLLING
