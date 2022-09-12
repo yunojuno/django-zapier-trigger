@@ -28,15 +28,3 @@ class TestTriggerSubscription:
         subscription.refresh_from_db()
         assert subscription.is_active
         assert subscription.target_url == "https://www.yahoo.com"
-
-    # def test_push(self, subscription: TriggerSubscription) -> None:
-    #     with mock.patch("zapier.triggers.submodels.requests") as mock_requests:
-    #         mock_response = mock.Mock()
-    #         mock_response.status_code = 200
-    #         mock_response.json.return_value = {"result": "OK"}
-    #         mock_requests.post.return_value = mock_response
-    #         event = subscription.push([{"foo": "bar"}])
-    #     assert event.status_code == 200
-    #     assert event.request_payload == [{"foo": "bar"}]
-    #     assert event.is_complete
-    #     assert event.duration

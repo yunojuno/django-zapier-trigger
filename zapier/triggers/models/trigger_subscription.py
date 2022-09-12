@@ -12,12 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 class TriggerSubscriptionQuerySet(models.QuerySet):
-    def active(self, trigger: str | None = None) -> TriggerSubscriptionQuerySet:
+    def active(self) -> TriggerSubscriptionQuerySet:
         """Filter active subscriptions."""
-        qs = self.filter(subscribed_at__isnull=False, unsubscribed_at__isnull=True)
-        if trigger:
-            qs.filter(trigger=trigger)
-        return qs
+        return self.filter(subscribed_at__isnull=False, unsubscribed_at__isnull=True)
+
+    def trigger(self, trigger: str) -> TriggerSubscriptionQuerySet:
+        """Filter by trigger."""
+        return self.filter(trigger=trigger)
 
 
 class TriggerSubscription(models.Model):
@@ -34,7 +35,7 @@ class TriggerSubscription(models.Model):
     )
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
-        related_name="rest_hooks",
+        related_name="zapier_sbuscriptions",
         on_delete=models.CASCADE,
     )
     trigger = models.CharField(
