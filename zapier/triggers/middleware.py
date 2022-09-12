@@ -32,16 +32,16 @@ class JsonRequestDumpMiddleware:
         # Code to be executed for each request before
         # the view (and later middleware) are called.
         request_id = str(uuid.uuid4()).split("-", 1)[0].upper()
-        logger.info(
+        logger.debug(
             "%s - request headers:\n%s",
             request_id,
             json.dumps(dict(request.headers), indent=2, sort_keys=True),
         )
         if request.headers.get("content-type", "") == "application/json":
-            logger.info("%s - request body:\n%s", request_id, dump_json(request.body))
+            logger.debug("%s - request body:\n%s", request_id, dump_json(request.body))
         response = self.get_response(request)
         if response.headers.get("content-type", "") == "application/json":
-            logger.info(
+            logger.debug(
                 "%s - response content:\n%s", request_id, dump_json(response.content)
             )
         return response

@@ -14,6 +14,7 @@ def subscribe(
     # when a zap is disabled the subscription is unsubscribed - in this
     # instance we have an inactive subscription, so we update the target
     # url (it will be different) and reset the timestamps.
+    logger.debug("Creating new subscription for trigger '%s'", trigger)
     if subscription := TriggerSubscription.objects.filter(
         trigger=trigger,
         user=user,
@@ -30,4 +31,5 @@ def subscribe(
 
 def unsubscribe(subscription: TriggerSubscription) -> None:
     """Delete a RestHookSubscription."""
+    logger.debug("Deleting subscription '%s'", subscription.uuid)
     subscription.unsubscribe()

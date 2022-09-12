@@ -25,7 +25,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "demo.middleware.JsonRequestDumpMiddleware",
+    "zapier.triggers.middleware.JsonRequestDumpMiddleware",
 ]
 
 PROJECT_DIR = path.abspath(path.join(path.dirname(__file__)))
@@ -82,14 +82,17 @@ if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
 
 # ===============
-# reject requests where user-agent is not "Zapier"
-ZAPIER_TRIGGERS_STRICT_MODE = not DEBUG
-# authenticate inbound requests from Zapier
-ZAPIER_TRIGGERS_AUTHENTICATION_CLASS = (
-    "rest_framework.authentication.TokenAuthentication"
-)
-# map of available triggers to list functions
-ZAPIER_TRIGGERS_LIST_FUNCS = {
-    "new_book": "demo.views.new_book",
-    "new_films": "demo.views.new_films",
+
+ZAPIER_TRIGGERS = {
+    # reject requests where user-agent is not "Zapier"
+    "STRICT_MODE": not DEBUG,
+    # authenticate inbound requests from Zapier
+    "AUTHENTICATOR": "rest_framework.authentication.TokenAuthentication",
+    # map of available triggers to list functions
+    "GET_DATA_FUNCS": {
+        "new_book": "demo.views.new_book",
+        "new_films": "demo.views.new_films",
+    },
+    # the JSON key used to extract the REST Hook url from inbound post ("hookUrl")
+    "HOOK_URL_KEY": "hookUrl",
 }

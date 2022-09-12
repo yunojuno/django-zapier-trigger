@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Callable, TypeAlias
+from functools import wraps
+from typing import Any
 from uuid import UUID
 
+from django.http import HttpResponseNotFound
 from django.shortcuts import get_object_or_404
 from django.utils.timezone import now as tz_now
 from rest_framework.decorators import (
@@ -17,35 +19,52 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from zapier.triggers.models.trigger_event import TriggerEvent
-
-from .models import TriggerSubscription
-from .settings import AUTHENTICATION_CLASS, LIST_FUNCS
+from .models import TriggerEvent, TriggerSubscription
+from .permissions import IsZapier
+from .response import JsonResponse
+from .settings import (
+    HOOK_URL_KEY,
+    get_authenticator,
+    get_trigger_data_func,
+    trigger_exists,
+)
 from .subscription import subscribe, unsubscribe
+from .types import TriggerData, TriggerViewMethod
 
 logger = logging.getLogger(__name__)
-# type alias for the "list" view functions
-TriggerData: TypeAlias = list[dict]
-TriggerViewFunc: TypeAlias = Callable[[Request], TriggerData]
+
+AUTHENTICATOR = get_authenticator()
 
 
 @api_view(["GET"])
-@authentication_classes([AUTHENTICATION_CLASS])
-@permission_classes([IsAuthenticated])
+@authentication_classes([AUTHENTICATOR])
+@permission_classes([IsAuthenticated, IsZapier])
 def auth_check(request: Request) -> Response:
     """Support Zapier auth check."""
     logger.debug("Successful authentication request.")
-    return Response(
-        {"connectionLabel": request.user.username}, content_type="application/json"
-    )
+    return JsonResponse({"connectionLabel": request.user.username}, status=200)
+
+
+def trigger_method(view_method: TriggerViewMethod) -> TriggerViewMethod:
+    """Return 404 if trigger passed to view method does not exist."""
+
+    @wraps(view_method)
+    def decorated(
+        view: TriggerView, request: Request, trigger: str, *args: Any, **kwargs: Any
+    ) -> JsonResponse | HttpResponseNotFound:
+        if trigger_exists(trigger):
+            return view_method(view, request, trigger, *args, **kwargs)
+        return HttpResponseNotFound("Unknown trigger request.")
+
+    return decorated
 
 
 class TriggerView(APIView):
     """
-    Base class for Zapier REST hook subscriptions.
+    Manage Zapier REST Hook subscriptions and route polling requests.
 
-    This is a base DRF APIView that maps the POST/DELETE/GET methods to
-    the Zapier REST hook trigger functions subscribe, unsubscribe, list.
+    This is a DRF APIView that maps the POST/DELETE/GET methods to the
+    Zapier REST hook trigger functions subscribe, unsubscribe, list.
 
     The AUTHENTICATION_CLASS is read in from the settings.py, and allows
     client applications to control which authentication is used. This
@@ -55,18 +74,28 @@ class TriggerView(APIView):
     supports one authentication mechanism per app, so this is a single
     value, not a list.
 
+    The POST/DELETE method create / delete REST Hook subscriptions. The
+    GET method calls the function configured in IST_FUNCS which can
+    either return real data (for a polling trigger), or static sample
+    data for a REST Hook.
+
+    The IsZapier permissions class checks for the "Zapier" user-agent if
+    STRICT_MODE is enabled.
+
+    The @check_trigger decorator returns a 404 response if the trigger
+    parameter is not configured as a LIST_FUNC key.
+
     """
 
-    authentication_classes = [AUTHENTICATION_CLASS]
-    permission_classes = [IsAuthenticated]
-
-    def get_trigger_list_func(self, trigger: str) -> TriggerViewFunc:
-        return LIST_FUNCS[trigger]
+    authentication_classes = [AUTHENTICATOR]
+    permission_classes = [IsAuthenticated, IsZapier]
 
     def get_trigger_data(self, request: Request, trigger: str) -> TriggerData:
-        return self.get_trigger_list_func(trigger)(request)
+        """Call the configured trigger view function."""
+        return get_trigger_data_func(trigger)(request)
 
-    def get(self, request: Request, trigger: str) -> Response:
+    @trigger_method
+    def get(self, request: Request, trigger: str) -> JsonResponse:
         """
         Fetch trigger data.
 
@@ -76,6 +105,7 @@ class TriggerView(APIView):
         some static sample data - it is only used for the Zap UI.
 
         """
+        logger.debug("Fetching data for '%s' trigger.", trigger)
         started_at = tz_now()
         event_data = self.get_trigger_data(request, trigger)
         # we only record if data exists.
@@ -89,18 +119,21 @@ class TriggerView(APIView):
                 finished_at=tz_now(),
                 status_code=200,
             )
-        return Response(data=event_data, content_type="application/json")
+        return JsonResponse(data=event_data, status=200, safe=False)
 
-    def post(self, request: Request, trigger: str) -> Response:
+    @trigger_method
+    def post(self, request: Request, trigger: str) -> JsonResponse:
         """Create a new webhook subscription."""
-        data = json.loads(request.body.decode())
-        hook_url = data["hookUrl"]
+        hook_url = json.loads(request.body.decode()).get(HOOK_URL_KEY)
         subscription = subscribe(request.user, trigger, target_url=hook_url)
         # response JSON is stored in `bundle.subscribeData`
-        return Response({"id": str(subscription.uuid)}, status=201)
+        return JsonResponse({"id": str(subscription.uuid)}, status=201)
 
-    def delete(self, request: Request, trigger: str, subscription_id: UUID) -> Response:
+    @trigger_method
+    def delete(
+        self, request: Request, trigger: str, subscription_id: UUID
+    ) -> JsonResponse:
         """Deactivate an existing webhook subscription."""
         subscription = get_object_or_404(TriggerSubscription, uuid=subscription_id)
         unsubscribe(subscription)
-        return Response(status=204)
+        return JsonResponse({}, status=204)
