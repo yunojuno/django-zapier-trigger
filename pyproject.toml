@@ -8,7 +8,7 @@ maintainers = ["YunoJuno <code@yunojuno.com>"]
 readme = "README.md"
 homepage = "https://github.com/yunojuno/django-zapier-trigger"
 repository = "https://github.com/yunojuno/django-zapier-trigger"
-documentation = "https://github.com/yunojuno/pdjango-zapier-trigger"
+documentation = "https://github.com/yunojuno/django-zapier-trigger"
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Web Environment",
@@ -34,7 +34,6 @@ djangorestframework = "*"
 [tool.poetry.dev-dependencies]
 black = "*"
 coverage = "*"
-dj-database-url = "*"
 factory-boy = "*"
 flake8 = "*"
 flake8-bandit = "*"
