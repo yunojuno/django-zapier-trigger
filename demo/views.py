@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 
 
 def new_book(request: Request) -> TriggerData:
+    """Return sample data for new_book trigger."""
     return [
         {"id": 1, "title": "Hot Water", "author": "PG Wodehouse", "published": "1932"},
         {
@@ -26,6 +27,7 @@ def new_book(request: Request) -> TriggerData:
     ]
 
 
-def new_films(request: Request) -> TriggerData:
+def new_film(request: Request) -> TriggerData:
+    """Return real data for new_film trigger."""
     films = Film.objects.all().order_by("-id")
     return [film.serialize() for film in films]

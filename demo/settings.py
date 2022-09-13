@@ -91,7 +91,7 @@ ZAPIER_TRIGGERS = {
     # map of available triggers to list functions
     "TRIGGERS": {
         "new_book": "demo.views.new_book",
-        "new_films": "demo.views.new_films",
+        "new_film": "demo.views.new_film",
     },
     # the JSON key used to extract the REST Hook url from inbound post ("hookUrl")
     "HOOK_URL_KEY": "hookUrl",
