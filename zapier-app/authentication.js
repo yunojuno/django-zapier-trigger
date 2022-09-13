@@ -1,5 +1,5 @@
 // basic Bearer token authentication, mimics Basic auth.
-module.exports = {
+apiKeyAuthentication = {
     type: "custom",
     connectionLabel: "{{connectionLabel}}",
     test: {
@@ -14,4 +14,17 @@ module.exports = {
             required: true
         }
     ]
+};
+
+basicAuthentication = {
+    type: "Basic",
+    connectionLabel: "{{connectionLabel}}",
+    test: {
+        url: "{{process.env.BASE_API_URL}}/zapier/triggers/auth/",
+    }
+};
+
+module.exports = {
+    apiKeyAuthentication: apiKeyAuthentication,
+    basicAuthentication: basicAuthentication
 };

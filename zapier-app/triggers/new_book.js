@@ -1,8 +1,7 @@
-const subscription = require("./subscription");
-const EVENT_NAME = "new_book";
+const trigger = require("./trigger");
 
 module.exports = {
-    key: EVENT_NAME,
+    key: "new_book",
     noun: "Book",
     display: {
         label: "New Book",
@@ -12,10 +11,10 @@ module.exports = {
     },
     operation: {
         type: "hook",
-        perform: subscription.perform(EVENT_NAME),
-        performList: subscription.list(EVENT_NAME),
-        performSubscribe: subscription.subscribe(EVENT_NAME),
-        performUnsubscribe: subscription.unsubscribe(EVENT_NAME),
+        perform: trigger.perform("new_book"),
+        performList: trigger.list("new_book"),
+        performSubscribe: trigger.subscribe("new_book"),
+        performUnsubscribe: trigger.unsubscribe("new_book"),
         sample: {
             id: 1,
             author: "Arthur Conan Doyle",

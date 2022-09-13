@@ -1,6 +1,6 @@
 const authentication = require("./authentication");
 const newBook = require("./triggers/new_book.js");
-const newFilms = require("./triggers/new_films.js");
+const newFilm = require("./triggers/new_film.js");
 
 const setRequestHeaders = (request, z, bundle) => {
     request.headers["Content-Type"] = "application/json";
@@ -12,7 +12,7 @@ const setRequestHeaders = (request, z, bundle) => {
 module.exports = {
     version: require("./package.json").version,
     platformVersion: require("zapier-platform-core").version,
-    authentication: authentication,
+    authentication: authentication.apiKeyAuthentication,
     beforeRequest: [setRequestHeaders],
-    triggers: { [newBook.key]: newBook, [newFilms.key]: newFilms }
+    triggers: { [newBook.key]: newBook, [newFilm.key]: newFilm }
 };

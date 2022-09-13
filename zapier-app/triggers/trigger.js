@@ -1,10 +1,11 @@
-// generic functions supporting RestHook operations
+// Core functions for supporting triggers.
 
 // Run when the hook triggers - by default this is a noop, but it could
 // be used to filter / inspect the payload. It's a closure just to keep
 // it consistent with all of the other functions - it's not required.
 const doPerform = (trigger) => {
     const performHook = async (z, bundle) => {
+        z.console.log(`Processing inbound request for trigger '${trigger}'.`);
         return [bundle.cleanedRequest];
     };
     return performHook;
@@ -15,7 +16,7 @@ const doPerform = (trigger) => {
 // passed through on the subsbscribe URL.
 const doSubscribe = (trigger) => {
     const subscribeHook = (z, bundle) => {
-        z.console.log(`Creating subscription for hook: ${trigger}`);
+        z.console.log(`Creating webhook subscription for trigger '${trigger}'.`);
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/subscriptions/`,
             method: "POST",
@@ -36,7 +37,7 @@ const doSubscribe = (trigger) => {
 
 const doUnsubscribe = (trigger) => {
     const unsubscribeHook = (z, bundle) => {
-        z.console.log(`Deleting subscription for hook: ${trigger}`);
+        z.console.log(`Deleting subscription for trigger '${trigger}'.`);
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/subscriptions/${bundle.subscribeData.id}/`,
             method: "DELETE",
@@ -51,7 +52,7 @@ const doUnsubscribe = (trigger) => {
 
 const doList = (trigger) => {
     const listHook = (z, bundle) => {
-        z.console.log(`Requesting list for hook: ${trigger}`);
+        z.console.log(`Requesting data for trigger '${trigger}'.`);
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/`,
             method: "GET",
