@@ -48,7 +48,7 @@ def trigger_method(view_method: TriggerViewMethod) -> TriggerViewMethod:
     ) -> JsonResponse | HttpResponseNotFound:
         if trigger_exists(trigger):
             return view_method(view, request, trigger, *args, **kwargs)
-        return HttpResponseNotFound("Unknown trigger request.")
+        return HttpResponseNotFound("Trigger does not exist.")
 
     return decorated
 
