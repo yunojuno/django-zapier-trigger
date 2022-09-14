@@ -93,6 +93,4 @@ ZAPIER_TRIGGERS = {
         "new_book": "demo.views.new_book",
         "new_film": "demo.views.new_film",
     },
-    # the JSON key used to extract the REST Hook url from inbound post ("hookUrl")
-    "HOOK_URL_KEY": "hookUrl",
 }

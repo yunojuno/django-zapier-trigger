@@ -59,10 +59,6 @@ The settings are all read in from the Django setting `ZAPIER_TRIGGER`, which is 
 
 * `STRICT_MODE`
 
-If True this will check that incoming requests come from Zapier. Defaults to `not DEBUG` - so it's on in production, and off in local development.
-
-* `HOOK_URL_KEY`
-
 The JSON key used to extract the Zapier subscription URL endpoint in the body of the `POST` request - defaults to `hookUrl`.
 
 * `TRIGGERS`

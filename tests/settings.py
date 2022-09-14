@@ -96,6 +96,4 @@ ZAPIER_TRIGGERS = {
         "new_book": "tests.settings.sample_trigger_func",
         "no_book": "tests.settings.empty_trigger_func",
     },
-    # the JSON key used to extract the REST Hook url from inbound post ("hookUrl")
-    "HOOK_URL_KEY": "hookUrl",
 }

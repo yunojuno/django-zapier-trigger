@@ -22,14 +22,7 @@ from rest_framework.views import APIView
 from .models import TriggerEvent, TriggerSubscription
 from .permissions import IsZapier
 from .response import JsonResponse
-from .settings import (
-    HOOK_URL_KEY,
-    SAMPLE_REQUEST_FUNC,
-    ZAP_ID,
-    get_authenticator,
-    get_trigger,
-    trigger_exists,
-)
+from .settings import get_authenticator, get_trigger, trigger_exists
 from .types import TriggerData, TriggerViewMethod
 
 logger = logging.getLogger(__name__)
@@ -93,7 +86,7 @@ class TriggerView(APIView):
 
     def is_sample_request(self, request: Request) -> bool:
         """Return True if the request is a sample data request."""
-        return SAMPLE_REQUEST_FUNC(request)
+        return request.query_params.get("sample", "").lower() == "true"
 
     def get_trigger_data(self, request: Request, trigger: str) -> TriggerData:
         """
@@ -135,15 +128,26 @@ class TriggerView(APIView):
             )
         return JsonResponse(data=event_data, status=200, safe=False)
 
+    def get_request_body(self, request: Request) -> dict:
+        """Decode incoming request body and return as a dict."""
+        return json.loads(request.body.decode())
+
+    def get_target_url(self, request: Request) -> str:
+        """Extract hookUrl from incoming request body."""
+        return self.get_request_body(request).get("hookUrl", "")
+
+    def get_zap_id(self, request: Request) -> str:
+        """Extract zapId from incoming request body."""
+        return self.get_request_body(request).get("zapId", "")
+
     @trigger_method
     def post(self, request: Request, trigger: str) -> JsonResponse:
         """Create a new webhook subscription."""
-        data = json.loads(request.body.decode())
         subscription = TriggerSubscription.objects.subscribe(
             user=request.user,
             trigger=trigger,
-            zap=data.get(ZAP_ID),
-            target_url=data.get(HOOK_URL_KEY),
+            zap=self.get_zap_id(request),
+            target_url=self.get_target_url(request),
         )
         # response JSON is stored in `bundle.subscribeData`
         return JsonResponse({"id": str(subscription.uuid)}, status=201)
