@@ -4,11 +4,15 @@ import logging
 from uuid import uuid4
 
 from django.conf import settings as django_settings
-from django.db import models
+from django.db import IntegrityError, models
 from django.utils.timezone import now as tz_now
 from django.utils.translation import gettext_lazy as _lazy
 
 logger = logging.getLogger(__name__)
+
+
+class TriggerSubscriptionError(Exception):
+    pass
 
 
 class TriggerSubscriptionQuerySet(models.QuerySet):
@@ -16,9 +20,28 @@ class TriggerSubscriptionQuerySet(models.QuerySet):
         """Filter active subscriptions."""
         return self.filter(subscribed_at__isnull=False, unsubscribed_at__isnull=True)
 
-    def trigger(self, trigger: str) -> TriggerSubscriptionQuerySet:
-        """Filter by trigger."""
-        return self.filter(trigger=trigger)
+
+class TriggerSubscriptionManager(models.Manager):
+    def subscribe(
+        self,
+        *,
+        user: django_settings.AUTH_USER_MODEL,
+        trigger: str,
+        zap: str,
+        target_url: str,
+    ) -> TriggerSubscription:
+        """Create a new subscription."""
+        try:
+            return self.create(
+                user=user,
+                trigger=trigger,
+                zap=zap,
+                target_url=target_url,
+            )
+        except IntegrityError as ex:
+            raise TriggerSubscriptionError(
+                "Error creating duplicate subscription."
+            ) from ex
 
 
 class TriggerSubscription(models.Model):
@@ -43,6 +66,15 @@ class TriggerSubscription(models.Model):
         db_index=True,
         help_text=_lazy("The name of the trigger event to subscribe to."),
     )
+    zap = models.CharField(
+        max_length=25,
+        default="",
+        blank=True,
+        help_text=_lazy(
+            "Zap identifier sourced from `${bundle.meta.zap.id}` "
+            "in the form 'subscription:22068168'."
+        ),
+    )
     target_url = models.URLField(
         help_text=_lazy("The webhook URL to which any payload will be POSTed.")
     )
@@ -57,7 +89,14 @@ class TriggerSubscription(models.Model):
         help_text=_lazy("Timestamp marking when the unsubscribe event occurred."),
     )
 
-    objects = TriggerSubscriptionQuerySet.as_manager()
+    objects = TriggerSubscriptionManager.from_queryset(TriggerSubscriptionQuerySet)()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "trigger", "zap"], name="unique_user_zap"
+            )
+        ]
 
     def __str__(self) -> str:
         return f"Subscription #{self.id} ('{self.trigger}')"
@@ -83,12 +122,5 @@ class TriggerSubscription(models.Model):
         }
 
     def unsubscribe(self) -> None:
-        self.target_url = ""
         self.unsubscribed_at = tz_now()
-        self.save(update_fields=["target_url", "unsubscribed_at"])
-
-    def resubscribe(self, target_url: str) -> None:
-        self.target_url = target_url
-        self.subscribed_at = tz_now()
-        self.unsubscribed_at = None
-        self.save(update_fields=["target_url", "subscribed_at", "unsubscribed_at"])
+        self.save(update_fields=["unsubscribed_at"])

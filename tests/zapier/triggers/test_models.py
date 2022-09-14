@@ -43,11 +43,11 @@ class TestTriggerSubscriptionQuerySet:
         subscription.unsubscribe()
         assert TriggerSubscription.objects.active().count() == 0
 
-    @pytest.mark.parametrize("trigger,count", [("foo", 1), ("bar", 0)])
-    def test_trigger(
-        self, subscription: TriggerSubscription, trigger: str, count: int
-    ) -> None:
-        assert TriggerSubscription.objects.trigger(trigger).count() == count
+    # @pytest.mark.parametrize("trigger,count", [("foo", 1), ("bar", 0)])
+    # def test_trigger(
+    #     self, subscription: TriggerSubscription, trigger: str, count: int
+    # ) -> None:
+    #     assert TriggerSubscription.objects.trigger(trigger).count() == count
 
 
 @pytest.mark.django_db

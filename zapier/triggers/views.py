@@ -22,8 +22,14 @@ from rest_framework.views import APIView
 from .models import TriggerEvent, TriggerSubscription
 from .permissions import IsZapier
 from .response import JsonResponse
-from .settings import HOOK_URL_KEY, get_authenticator, get_trigger, trigger_exists
-from .subscription import subscribe, unsubscribe
+from .settings import (
+    HOOK_URL_KEY,
+    SAMPLE_REQUEST_FUNC,
+    ZAP_ID,
+    get_authenticator,
+    get_trigger,
+    trigger_exists,
+)
 from .types import TriggerData, TriggerViewMethod
 
 logger = logging.getLogger(__name__)
@@ -85,9 +91,22 @@ class TriggerView(APIView):
     authentication_classes = [AUTHENTICATOR]
     permission_classes = [IsAuthenticated, IsZapier]
 
+    def is_sample_request(self, request: Request) -> bool:
+        """Return True if the request is a sample data request."""
+        return SAMPLE_REQUEST_FUNC(request)
+
     def get_trigger_data(self, request: Request, trigger: str) -> TriggerData:
-        """Call the configured trigger view function."""
-        return get_trigger(trigger)(request)
+        """
+        Call the configured trigger view function.
+
+        For sample requests we only return three objects max to Zapier
+        as that is all that the UI requires.
+
+        """
+        data = get_trigger(trigger)(request)
+        if self.is_sample_request(request):
+            return data[:3]
+        return data
 
     @trigger_method
     def get(self, request: Request, trigger: str) -> JsonResponse:
@@ -103,8 +122,8 @@ class TriggerView(APIView):
         logger.debug("Fetching data for '%s' trigger.", trigger)
         started_at = tz_now()
         event_data = self.get_trigger_data(request, trigger)
-        # we only record if data exists.
-        if event_data:
+        # we only record if data exists, and is _not_ a sample request
+        if event_data and not self.is_sample_request(request):
             TriggerEvent.objects.create(
                 user=request.user,
                 trigger=trigger,
@@ -119,8 +138,13 @@ class TriggerView(APIView):
     @trigger_method
     def post(self, request: Request, trigger: str) -> JsonResponse:
         """Create a new webhook subscription."""
-        hook_url = json.loads(request.body.decode()).get(HOOK_URL_KEY)
-        subscription = subscribe(request.user, trigger, target_url=hook_url)
+        data = json.loads(request.body.decode())
+        subscription = TriggerSubscription.objects.subscribe(
+            user=request.user,
+            trigger=trigger,
+            zap=data.get(ZAP_ID),
+            target_url=data.get(HOOK_URL_KEY),
+        )
         # response JSON is stored in `bundle.subscribeData`
         return JsonResponse({"id": str(subscription.uuid)}, status=201)
 
@@ -130,5 +154,5 @@ class TriggerView(APIView):
     ) -> JsonResponse:
         """Deactivate an existing webhook subscription."""
         subscription = get_object_or_404(TriggerSubscription, uuid=subscription_id)
-        unsubscribe(subscription)
+        subscription.unsubscribe()
         return JsonResponse({}, status=204)

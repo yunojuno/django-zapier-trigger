@@ -35,10 +35,11 @@ def format_json_for_admin(data: dict) -> str:
 
 @admin.register(TriggerSubscription)
 class TriggerSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ("user", "trigger", "subscribed_at", "_is_active")
+    list_display = ("user", "trigger", "zap", "subscribed_at", "_is_active")
     readonly_fields = (
         "user",
         "trigger",
+        "zap",
         "target_url",
         "subscribed_at",
         "unsubscribed_at",

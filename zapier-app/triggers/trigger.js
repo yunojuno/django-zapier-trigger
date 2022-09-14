@@ -16,7 +16,9 @@ const doPerform = (trigger) => {
 // passed through on the subsbscribe URL.
 const doSubscribe = (trigger) => {
     const subscribeHook = (z, bundle) => {
-        z.console.log(`Creating webhook subscription for trigger '${trigger}'.`);
+        z.console.log(
+            `Creating webhook subscription for trigger '${trigger}'.`
+        );
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/subscriptions/`,
             method: "POST",
@@ -24,7 +26,8 @@ const doSubscribe = (trigger) => {
                 // targetUrl is the Zapier URL to which event payloads
                 // will be posted. It is stored along with the
                 // subscription.
-                hookUrl: bundle.targetUrl
+                hookUrl: bundle.targetUrl,
+                zapId: bundle.meta.zap.id
             }
         };
         return z.request(options).then((response) => {
@@ -40,7 +43,7 @@ const doUnsubscribe = (trigger) => {
         z.console.log(`Deleting subscription for trigger '${trigger}'.`);
         const options = {
             url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/subscriptions/${bundle.subscribeData.id}/`,
-            method: "DELETE",
+            method: "DELETE"
         };
         return z.request(options).then((response) => {
             response.throwForStatus();
@@ -54,8 +57,8 @@ const doList = (trigger) => {
     const listHook = (z, bundle) => {
         z.console.log(`Requesting data for trigger '${trigger}'.`);
         const options = {
-            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/`,
-            method: "GET",
+            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/?sample=${bundle.meta.isLoadingSample}`,
+            method: "GET"
         };
         return z.request(options).then((response) => {
             response.throwForStatus();

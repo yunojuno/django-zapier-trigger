@@ -6,6 +6,7 @@ from typing import Callable
 from django.conf import settings
 from django.core.exceptions import MiddlewareNotUsed
 from django.http import HttpRequest, HttpResponse
+from rest_framework.request import Request
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,10 @@ def dump_json(data: bytes) -> str:
     except json.JSONDecodeError:
         logger.exception("Error decoding data")
         return "(error)"
+
+
+def is_json_request(request: Request) -> bool:
+    return "application/json" in request.headers.get("content-type", "")
 
 
 class JsonRequestDumpMiddleware:
@@ -37,10 +42,10 @@ class JsonRequestDumpMiddleware:
             request_id,
             json.dumps(dict(request.headers), indent=2, sort_keys=True),
         )
-        if request.headers.get("content-type", "") == "application/json":
+        if is_json_request(request):
             logger.debug("%s - request body:\n%s", request_id, dump_json(request.body))
         response = self.get_response(request)
-        if response.headers.get("content-type", "") == "application/json":
+        if is_json_request(request):
             logger.debug(
                 "%s - response content:\n%s", request_id, dump_json(response.content)
             )
