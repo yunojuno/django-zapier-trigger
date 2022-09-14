@@ -61,9 +61,10 @@ class TriggerEventAdmin(admin.ModelAdmin):
         "started_at",
         "duration",
         "status_code",
-        # "status",
+        "object_count",
     )
     readonly_fields = (
+        "uuid",
         "user",
         "trigger",
         "http_method",
@@ -73,6 +74,7 @@ class TriggerEventAdmin(admin.ModelAdmin):
         "subscription",
         "status_code",
         "_event_data",
+        "object_count",
     )
     exclude = ("event_data",)
     raw_id_fields = ("user", "subscription")

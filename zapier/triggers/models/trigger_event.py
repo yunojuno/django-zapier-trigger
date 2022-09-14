@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from uuid import uuid4
 
 from django.conf import settings as django_settings
 from django.core.serializers.json import DjangoJSONEncoder
@@ -13,6 +14,9 @@ from .trigger_subscription import TriggerSubscription
 
 class TriggerEvent(models.Model):
 
+    uuid = models.UUIDField(
+        default=uuid4, help_text=_lazy("Public ID used for tracking purposes.")
+    )
     user = models.ForeignKey(
         django_settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -40,6 +44,9 @@ class TriggerEvent(models.Model):
         null=True,
         encoder=DjangoJSONEncoder,
         help_text=_lazy("JSON data sent to Zapier."),
+    )
+    object_count = models.IntegerField(
+        default=0, help_text=_lazy("The count of objects stored in the event_data.")
     )
     started_at = models.DateTimeField(default=tz_now, blank=True, null=True)
     finished_at = models.DateTimeField(blank=True, null=True)

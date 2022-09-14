@@ -22,7 +22,12 @@ from rest_framework.views import APIView
 from .models import TriggerEvent, TriggerSubscription
 from .permissions import IsZapier
 from .response import JsonResponse
-from .settings import get_authenticator, get_trigger, trigger_exists
+from .settings import (
+    ADD_RESPONSE_HEADERS,
+    get_authenticator,
+    get_trigger,
+    trigger_exists,
+)
 from .types import TriggerData, TriggerViewMethod
 
 logger = logging.getLogger(__name__)
@@ -115,18 +120,24 @@ class TriggerView(APIView):
         logger.debug("Fetching data for '%s' trigger.", trigger)
         started_at = tz_now()
         event_data = self.get_trigger_data(request, trigger)
+        headers = {}
         # we only record if data exists, and is _not_ a sample request
         if event_data and not self.is_sample_request(request):
-            TriggerEvent.objects.create(
+            event = TriggerEvent.objects.create(
                 user=request.user,
                 trigger=trigger,
                 event_data=event_data,
+                object_count=len(event_data),
                 http_method="GET",
                 started_at=started_at,
                 finished_at=tz_now(),
                 status_code=200,
             )
-        return JsonResponse(data=event_data, status=200, safe=False)
+            if ADD_RESPONSE_HEADERS:
+                headers["X-Api-Trigger-Count"] = len(event_data)
+                headers["X-Api-Trigger-Event"] = event.uuid
+
+        return JsonResponse(data=event_data, status=200, safe=False, headers=headers)
 
     def get_request_body(self, request: Request) -> dict:
         """Decode incoming request body and return as a dict."""
