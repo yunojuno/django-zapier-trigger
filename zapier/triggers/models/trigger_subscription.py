@@ -114,11 +114,12 @@ class TriggerSubscription(models.Model):
     def serialize(self) -> dict:
         """Serialize object as a JSON-serializable dict."""
         return {
-            "uuid": self.uuid,
-            "user_id": self.user.pk,
+            "active": self.is_active,
             "trigger": self.trigger,
             "url": self.target_url,
-            "active": self.is_active,
+            "user_id": self.user.pk,
+            "uuid": self.uuid,
+            "zap": self.zap,
         }
 
     def unsubscribe(self) -> None:

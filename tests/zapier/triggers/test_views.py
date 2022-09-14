@@ -63,7 +63,7 @@ class TestTriggerView:
         url = reverse("zapier_triggers:subscribe", kwargs={"trigger": "new_book"})
         request = rf.post(
             url,
-            data={"hookUrl": "www.foogle.com"},
+            data={"hookUrl": "www.foogle.com", "zapId": "subscription:123"},
             content_type="application/json",
             HTTP_AUTHORIZATION=f"Token {active_token.key}",
         )
@@ -73,6 +73,8 @@ class TestTriggerView:
         assert new_subscription.is_active
         assert new_subscription.trigger == "new_book"
         assert new_subscription.user == active_token.user
+        assert new_subscription.zap == "subscription:123"
+        assert new_subscription.target_url == "www.foogle.com"
 
     def test_delete(
         self,
