@@ -10,7 +10,7 @@ module.exports = {
         important: true
     },
     operation: {
-        perform: trigger.list("new_film"),
+        perform: trigger.poll("new_film"),
         sample: {
             id: 1,
             title: "Sergei Eisenstein",

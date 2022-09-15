@@ -57,8 +57,9 @@ const doList = (trigger) => {
     const listHook = (z, bundle) => {
         z.console.log(`Requesting data for trigger '${trigger}'.`);
         const options = {
-            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/?sample=${bundle.meta.isLoadingSample}`,
-            method: "GET"
+            url: `${process.env.BASE_API_URL}/zapier/triggers/${trigger}/`,
+            method: "GET",
+            params: {sample: bundle.meta.isLoadingSample}
         };
         return z.request(options).then((response) => {
             response.throwForStatus();
@@ -72,5 +73,6 @@ module.exports = {
     perform: doPerform,
     subscribe: doSubscribe,
     unsubscribe: doUnsubscribe,
-    list: doList
+    poll: doList,
+    sample: doList
 };

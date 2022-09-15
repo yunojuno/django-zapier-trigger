@@ -12,7 +12,7 @@ module.exports = {
     operation: {
         type: "hook",
         perform: trigger.perform("new_book"),
-        performList: trigger.list("new_book"),
+        performList: trigger.sample("new_book"),
         performSubscribe: trigger.subscribe("new_book"),
         performUnsubscribe: trigger.unsubscribe("new_book"),
         sample: {
