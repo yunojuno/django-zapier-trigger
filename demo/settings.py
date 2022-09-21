@@ -13,7 +13,8 @@ INSTALLED_APPS = (
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "zapier",
+    "rest_framework.authtoken",
+    "zapier.triggers",
     "demo",
 )
 
@@ -24,6 +25,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "zapier.triggers.middleware.JsonRequestDumpMiddleware",
 ]
 
 PROJECT_DIR = path.abspath(path.join(path.dirname(__file__)))
@@ -70,5 +72,25 @@ LOGGING = {
 
 ROOT_URLCONF = "demo.urls"
 
+ALLOWED_HOSTS = (
+    "localhost",
+    "127.0.0.1",
+    ".ngrok.io",
+)
+
 if not DEBUG:
     raise Exception("This settings file can only be used with DEBUG=True")
+
+# ===============
+
+ZAPIER_TRIGGERS = {
+    # reject requests where user-agent is not "Zapier"
+    "STRICT_MODE": not DEBUG,
+    # authenticate inbound requests from Zapier
+    "AUTHENTICATOR": "rest_framework.authentication.TokenAuthentication",
+    # map of available triggers to list functions
+    "TRIGGERS": {
+        "new_book": "demo.views.new_book",
+        "new_film": "demo.views.new_film",
+    },
+}

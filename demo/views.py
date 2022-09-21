@@ -1,37 +1,33 @@
-from django.db.models import QuerySet
-from django.http import HttpRequest, JsonResponse
+import logging
 
-from demo.models import Book
-from zapier.decorators import polling_trigger
-from zapier.models import ZapierToken
-from zapier.views import PollingTriggerView
+from rest_framework.request import Request
 
+from demo.models import Film
+from zapier.triggers.types import TriggerData
 
-@polling_trigger("test_trigger")
-def test(request: HttpRequest, number: int) -> JsonResponse:
-    return JsonResponse([{"id": i} for i in reversed(range(number))], safe=False)
+logger = logging.getLogger(__name__)
 
 
-class NewBooksById(PollingTriggerView):
+def new_book(request: Request) -> TriggerData:
+    """Return sample data for new_book trigger."""
+    return [
+        {"id": 1, "title": "Hot Water", "author": "PG Wodehouse", "published": "1932"},
+        {
+            "id": 2,
+            "title": "Great Expectations",
+            "author": "Charles Dickens",
+            "published": "1860",
+        },
+        {
+            "id": 3,
+            "title": "Moby Dick",
+            "author": "Herman Melville",
+            "published": "1851",
+        },
+    ]
 
-    scope = "new_books"
 
-    def get_last_obj(self, request: HttpRequest) -> dict | None:
-        token: ZapierToken = request.auth
-        if log := token.requests.exclude(count=0).last():
-            return log.most_recent_object
-        return None
-
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        qs = Book.objects.order_by("-id").values()
-        if obj := self.get_last_obj(request):
-            return qs.filter(id__gt=obj["id"])
-        return qs
-
-
-class NewBooksByTimestamp(NewBooksById):
-    def get_queryset(self, request: HttpRequest) -> QuerySet:
-        qs = Book.objects.order_by("-id").values()
-        if obj := self.get_last_obj(request):
-            return qs.filter(published_at__gt=obj["published_at"])
-        return qs
+def new_film(request: Request) -> TriggerData:
+    """Return real data for new_film trigger."""
+    films = Film.objects.all().order_by("-id")
+    return [film.serialize() for film in films]
