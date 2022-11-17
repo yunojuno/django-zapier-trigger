@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-zapier-trigger"
-version = "1.0.beta3"
+version = "1.0.beta4"
 description = "Django (DRF) backed app for managing Zapier triggers."
 license = "MIT"
 authors = ["YunoJuno <code@yunojuno.com>"]
@@ -20,6 +20,7 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 packages = [{ include = "zapier" }]
 
