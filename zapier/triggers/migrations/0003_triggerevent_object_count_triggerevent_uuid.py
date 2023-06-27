@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("zapier_triggers", "0002_triggersubscription_zap_and_more"),
     ]

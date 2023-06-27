@@ -53,7 +53,6 @@ class TriggerSubscriptionAdmin(admin.ModelAdmin):
 
 @admin.register(TriggerEvent)
 class TriggerEventAdmin(admin.ModelAdmin):
-
     list_display = (
         "user",
         "trigger",

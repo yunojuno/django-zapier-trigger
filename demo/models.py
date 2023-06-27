@@ -7,7 +7,6 @@ class BookQuerySet(models.QuerySet):
 
 
 class Book(models.Model):
-
     title = models.CharField(max_length=100)
     author = models.CharField(max_length=100)
     published_at = models.DateTimeField(default=tz_now)
@@ -31,7 +30,6 @@ class FilmQuerySet(models.QuerySet):
 
 
 class Film(models.Model):
-
     title = models.CharField(max_length=100)
     director = models.CharField(max_length=100)
     release_date = models.DateField()
