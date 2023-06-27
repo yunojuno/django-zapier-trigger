@@ -13,7 +13,6 @@ from .trigger_subscription import TriggerSubscription
 
 
 class TriggerEvent(models.Model):
-
     uuid = models.UUIDField(
         default=uuid4, help_text=_lazy("Public ID used for tracking purposes.")
     )

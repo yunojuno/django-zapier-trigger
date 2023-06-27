@@ -1,5 +1,5 @@
 import importlib
-from typing import Callable, Type
+from typing import Any, Callable, Type
 
 from django.conf import settings as django_settings
 from django.core.exceptions import ImproperlyConfigured
@@ -13,6 +13,7 @@ _settings.setdefault("AUTHENTICATOR", None)
 _settings.setdefault("STRICT_MODE", not django_settings.DEBUG)
 _settings.setdefault("TRIGGERS", {})
 _settings.setdefault("ADD_RESPONSE_HEADERS", django_settings.DEBUG)
+_settings.setdefault("REQUESTS_TIMEOUT", 10)
 
 # set to True to reject requests that don't come from Zapier
 STRICT_MODE = _settings["STRICT_MODE"]
@@ -49,3 +50,8 @@ def get_trigger(trigger: str) -> TriggerViewFunc:
 def trigger_exists(trigger: str) -> bool:
     """Check that the trigger is configured."""
     return trigger in _settings["TRIGGERS"]
+
+
+def get_setting(setting_name: str, default: Any = None) -> Any:
+    """Return value of a setting."""
+    return _settings.get(setting_name, default)
