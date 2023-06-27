@@ -4,7 +4,7 @@ Django (DRF) app for managing Zapier triggers.
 
 ### Version support
 
-This app supports Django 3.2+ and Python 3.10+.
+This app supports Django 3.2+ and Python 3.11+.
 
 ## Background
 
