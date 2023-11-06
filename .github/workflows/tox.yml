@@ -20,7 +20,7 @@ jobs:
 
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v4
@@ -37,8 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: ["3.10", "3.11"]
-        django: [32,40,41,42,main]
+        python: ["3.10", "3.11", "3.12"]
+        django: [32,40,41,42,50,main]
 
     env:
       TOXENV: py${{ matrix.python }}-django${{ matrix.django }}
