@@ -30,7 +30,7 @@ def format_json_for_admin(data: dict) -> str:
     # inline style to mimic the CSS, or forego the <pre> and put the spaces
     # and linebreaks in as HTML.
     pretty = pretty.replace(" ", "&nbsp;").replace("\n", "<br/>")
-    return format_html("<code>{}</code>", mark_safe(pretty))
+    return format_html("<code>{}</code>", mark_safe(pretty))  # noqa: S308
 
 
 @admin.register(TriggerSubscription)
